@@ -9,7 +9,7 @@ pub mod tokenization
 	pub enum Token
 	{
 		Number(f64),
-		Operator(Operator),
+		Operator(OperatorToken),
 		Delimiter
 		{
 			is_open: bool,
@@ -26,7 +26,7 @@ pub mod tokenization
 	}
 
 	#[derive(Debug, PartialEq, Eq)]
-	pub enum Operator
+	pub enum OperatorToken
 	{
 		Plus,
 		Minus,
@@ -42,9 +42,9 @@ pub mod tokenization
 		GreaterOrEqual,
 		LessOrEqual,
 	}
-	impl Operator
+	impl OperatorToken
 	{
-		fn from(str: &str) -> Option<Operator>
+		fn from(str: &str) -> Option<OperatorToken>
 		{
 			match str {
 				"+" => Some(Self::Plus),
@@ -65,14 +65,14 @@ pub mod tokenization
 		}
 	}
 
-	pub struct TokenStream
+	pub struct TokenStream<'a>
 	{
-		string: String,
+		string: &'a str,
 		current_index: usize,
 	}
-	impl TokenStream
+	impl<'a> TokenStream<'a>
 	{
-		pub fn new(string: String) -> TokenStream
+		pub fn new(string: &'a str) -> Self
 		{
 			TokenStream {
 				string,
@@ -87,7 +87,7 @@ pub mod tokenization
 			TokenType::Delimiter => Regex::new(r"[\(\)]").unwrap()
 		};
 	}
-	impl Iterator for TokenStream
+	impl<'a> Iterator for TokenStream<'a>
 	{
 		type Item = Token;
 		fn next(&mut self) -> Option<Self::Item>
@@ -110,7 +110,7 @@ pub mod tokenization
 							Some(Token::Number(mtch.as_str().parse::<f64>().unwrap()))
 						}
 						TokenType::Operator => {
-							Some(Token::Operator(Operator::from(mtch.as_str()).unwrap()))
+							Some(Token::Operator(OperatorToken::from(mtch.as_str()).unwrap()))
 						}
 						TokenType::Delimiter => Some(Token::Delimiter {
 							is_open: mtch.as_str() == "(",
