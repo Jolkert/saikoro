@@ -139,21 +139,20 @@ pub fn rpn_queue_from(string: &str) -> VecDeque<Node>
 }
 fn push_operator_to_stack(
 	operator: Operator,
-	stack: &mut Vec<OpOrDelim>,
+	operator_stack: &mut Vec<OpOrDelim>,
 	output_queue: &mut VecDeque<Node>,
 )
 {
-	while let Some(front) = stack.last()
+	while let Some(last) = operator_stack.last()
 	{
-		match front
+		match last
 		{
-			OpOrDelim::Delimiter { is_open: _ } => break,
 			OpOrDelim::Operator(last_op) =>
 			{
 				if last_op.valency <= operator.valency
 					&& last_op.priority >= (operator.priority + operator.associativity)
 				{
-					if let Some(OpOrDelim::Operator(it)) = stack.pop()
+					if let Some(OpOrDelim::Operator(it)) = operator_stack.pop()
 					{
 						output_queue.push_back(Node::Operator(it));
 					}
@@ -163,9 +162,10 @@ fn push_operator_to_stack(
 					break;
 				}
 			}
+			_ => break,
 		}
 	}
-	stack.push(OpOrDelim::Operator(operator));
+	operator_stack.push(OpOrDelim::Operator(operator));
 }
 
 pub mod tokenization
