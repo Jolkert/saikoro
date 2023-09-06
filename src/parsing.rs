@@ -1,55 +1,16 @@
+mod operators;
+pub mod tokenization;
+pub use operators::*;
+
 use std::collections::VecDeque;
-use std::ops;
-use tokenization::{OperatorToken, Token, TokenStream};
+use tokenization::{Token, TokenStream};
 
 // TODO: better name -morgan 2023-09-03
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Node
 {
 	Number(f64),
 	Operator(Operator),
-}
-#[derive(Debug)]
-pub struct Operator
-{
-	pub priority: u16,
-	pub valency: u8,
-	pub associativity: Associativity,
-}
-
-#[derive(PartialEq, Eq, Clone, Copy, Debug)]
-pub enum Associativity
-{
-	Left = 0,
-	Right = 1,
-}
-impl ops::Add<Associativity> for u16
-{
-	type Output = u16;
-	fn add(self, rhs: Associativity) -> Self::Output
-	{
-		self + if rhs == Associativity::Left { 0 } else { 1 }
-	}
-}
-
-enum OpOrDelim
-{
-	Operator(Operator),
-	Delimiter
-	{
-		is_open: bool,
-	},
-}
-impl OpOrDelim
-{
-	fn is_operator(&self) -> bool
-	{
-		match self
-		{
-			Self::Operator(_) => true,
-			_ => false,
-		}
-	}
 }
 
 pub fn rpn_queue_from(string: &str) -> VecDeque<Node>
@@ -137,6 +98,7 @@ pub fn rpn_queue_from(string: &str) -> VecDeque<Node>
 
 	output_queue
 }
+
 fn push_operator_to_stack(
 	operator: Operator,
 	operator_stack: &mut Vec<OpOrDelim>,
@@ -166,156 +128,4 @@ fn push_operator_to_stack(
 		}
 	}
 	operator_stack.push(OpOrDelim::Operator(operator));
-}
-
-pub mod tokenization
-{
-	use lazy_static::lazy_static;
-	use maplit::hashmap;
-	use regex::Regex;
-	use std::collections::HashMap;
-
-	#[derive(Debug, PartialEq)]
-	pub enum Token
-	{
-		Number(f64),
-		Operator(OperatorToken),
-		Delimiter
-		{
-			is_open: bool,
-		},
-	}
-
-	#[derive(PartialEq, Eq, Hash)]
-	enum TokenType
-	{
-		// TODO: find a better way -morgan 2023-09-02
-		Number,
-		Operator,
-		Delimiter,
-	}
-
-	#[derive(Debug, PartialEq, Eq)]
-	pub enum OperatorToken
-	{
-		Plus,
-		Minus,
-		Multiply,
-		Divide,
-		Modulus,
-		Power,
-		Dice,
-		Equals,
-		NotEquals,
-		GreaterThan,
-		LessThan,
-		GreaterOrEqual,
-		LessOrEqual,
-	}
-	impl OperatorToken
-	{
-		fn from(str: &str) -> Option<OperatorToken>
-		{
-			match str
-			{
-				"+" => Some(Self::Plus),
-				"-" => Some(Self::Minus),
-				"*" => Some(Self::Multiply),
-				"/" => Some(Self::Divide),
-				"%" => Some(Self::Modulus),
-				"^" => Some(Self::Power),
-				"d" | "D" => Some(Self::Dice),
-				"==" => Some(Self::Equals),
-				"!=" => Some(Self::NotEquals),
-				">" => Some(Self::GreaterThan),
-				"<" => Some(Self::LessThan),
-				">=" => Some(Self::GreaterOrEqual),
-				"<=" => Some(Self::LessOrEqual),
-				_ => None,
-			}
-		}
-
-		pub fn priority(&self) -> u16
-		{
-			match self
-			{
-				Self::Plus | Self::Minus => 0,
-				Self::Multiply | Self::Divide | Self::Modulus => 1,
-				Self::Power => 2,
-				Self::Dice => 3,
-				Self::Equals
-				| Self::NotEquals
-				| Self::GreaterThan
-				| Self::LessThan
-				| Self::GreaterOrEqual
-				| Self::LessOrEqual => 4,
-			}
-		}
-	}
-
-	pub struct TokenStream<'a>
-	{
-		string: &'a str,
-		current_index: usize,
-	}
-
-	impl<'a> TokenStream<'a>
-	{
-		pub fn new(string: &'a str) -> Self
-		{
-			TokenStream {
-				string,
-				current_index: 0,
-			}
-		}
-	}
-	lazy_static! {
-		static ref REGEX_MAP: HashMap<TokenType, Regex> = hashmap! {
-			TokenType::Number => Regex::new(r"\d+(\.\d+)?").unwrap(),
-			TokenType::Operator => Regex::new(r"[\+\-\*\/%^dD]|==|!=|>=|<=|>|<").unwrap(),
-			TokenType::Delimiter => Regex::new(r"[\(\)]").unwrap()
-		};
-	}
-	impl<'a> Iterator for TokenStream<'a>
-	{
-		type Item = Token;
-		fn next(&mut self) -> Option<Self::Item>
-		{
-			if self.current_index >= self.string.len()
-			{
-				return None;
-			}
-
-			for pair in REGEX_MAP.iter()
-			{
-				if let Some(mtch) = pair.1.find_at(&self.string, self.current_index)
-				{
-					if mtch.start() != self.current_index
-					{
-						continue;
-					}
-
-					self.current_index += mtch.as_str().len();
-
-					// TODO: make this nicer
-					return match pair.0
-					{
-						TokenType::Number =>
-						{
-							Some(Token::Number(mtch.as_str().parse::<f64>().unwrap()))
-						}
-						TokenType::Operator =>
-						{
-							Some(Token::Operator(OperatorToken::from(mtch.as_str()).unwrap()))
-						}
-						TokenType::Delimiter => Some(Token::Delimiter {
-							is_open: mtch.as_str() == "(",
-						}),
-					};
-				}
-			}
-
-			None
-		}
-	}
 }

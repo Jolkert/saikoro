@@ -1,12 +1,8 @@
-#![feature(assert_matches)]
-#![feature(slice_pattern)]
 mod parsing;
 
 #[cfg(test)]
 mod tests
 {
-	use std::assert_matches::assert_matches;
-
 	use crate::parsing::tokenization::{OperatorToken, Token, TokenStream};
 	use crate::parsing::{self, Associativity, Node, Operator};
 
@@ -40,25 +36,26 @@ mod tests
 	#[test]
 	fn basic_parse_queue_test()
 	{
-		let mut output = parsing::rpn_queue_from("2+7*3");
+		let output = parsing::rpn_queue_from("2+7*3");
 
-		assert_matches!(
-			output.make_contiguous(),
-			[
-				Node::Number(2.0),
-				Node::Number(7.0),
-				Node::Number(3.0),
-				Node::Operator(Operator {
-					priority: 1,
-					valency: 2,
-					associativity: Associativity::Left,
-				}),
-				Node::Operator(Operator {
-					priority: 0,
-					valency: 2,
-					associativity: Associativity::Left,
-				}),
-			]
-		)
+		assert_eq!(output[0], Node::Number(2.0));
+		assert_eq!(output[1], Node::Number(7.0));
+		assert_eq!(output[2], Node::Number(3.0));
+		assert_eq!(
+			output[3],
+			Node::Operator(Operator {
+				priority: OperatorToken::Multiply.priority(),
+				valency: 2,
+				associativity: Associativity::Left,
+			})
+		);
+		assert_eq!(
+			output[4],
+			Node::Operator(Operator {
+				priority: OperatorToken::Plus.priority(),
+				valency: 2,
+				associativity: Associativity::Left,
+			})
+		);
 	}
 }
