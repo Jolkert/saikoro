@@ -16,8 +16,8 @@ pub enum Node
 pub fn rpn_queue_from(string: &str) -> VecDeque<Node>
 {
 	let stream = TokenStream::new(string);
-	let mut output_queue: VecDeque<Node> = VecDeque::new();
-	let mut operator_stack: Vec<OpOrDelim> = Vec::new();
+	let mut output_queue = VecDeque::<Node>::new();
+	let mut operator_stack = Vec::<OpOrDelim>::new();
 
 	let mut previous: Option<Token> = None;
 	for token in stream

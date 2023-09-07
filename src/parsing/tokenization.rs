@@ -9,7 +9,8 @@ lazy_static! {
 	static ref REGEX_MAP: HashMap<TokenType, Regex> = hashmap! {
 		TokenType::Number => Regex::new(r"\d+(\.\d+)?").unwrap(),
 		TokenType::Operator => Regex::new(r"[\+\-\*\/%^dD]|==|!=|>=|<=|>|<").unwrap(),
-		TokenType::Delimiter => Regex::new(r"[\(\)]").unwrap()
+		TokenType::Delimiter => Regex::new(r"[\(\)]").unwrap(),
+		TokenType::Whitespace => Regex::new(r"\s+").unwrap()
 	};
 }
 
@@ -31,6 +32,7 @@ enum TokenType
 	Number,
 	Operator,
 	Delimiter,
+	Whitespace,
 }
 
 pub struct TokenStream<'a>
@@ -73,13 +75,33 @@ impl<'a> Iterator for TokenStream<'a>
 				// TODO: make this nicer
 				return match pair.0
 				{
-					TokenType::Number => Some(Token::Number(mtch.as_str().parse::<f64>().unwrap())),
-					TokenType::Operator => Some(Token::Operator(
-						mtch.as_str().parse::<OperatorToken>().unwrap(),
-					)),
+					TokenType::Number =>
+					{
+						if let Ok(n) = mtch.as_str().parse::<f64>()
+						{
+							Some(Token::Number(n))
+						}
+						else
+						{
+							// this is actually kinda semantically incorrect? but it works for now // -morg 2023-09-07
+							None
+						}
+					}
+					TokenType::Operator =>
+					{
+						if let Ok(op) = mtch.as_str().parse::<OperatorToken>()
+						{
+							Some(Token::Operator(op))
+						}
+						else
+						{
+							None
+						}
+					}
 					TokenType::Delimiter => Some(Token::Delimiter {
 						is_open: mtch.as_str() == "(",
 					}),
+					TokenType::Whitespace => self.next(),
 				};
 			}
 		}

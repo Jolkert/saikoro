@@ -58,4 +58,17 @@ mod tests
 			})
 		);
 	}
+
+	#[test]
+	fn whitespace_test()
+	{
+		let stream_no_whitespace = TokenStream::new("17+9-3").collect::<Vec<Token>>();
+		let stream_whitespace = TokenStream::new("17 + 9 - 3").collect::<Vec<Token>>();
+
+		assert_eq!(stream_no_whitespace.len(), stream_whitespace.len());
+		for token_pair in stream_no_whitespace.iter().zip(stream_whitespace.iter())
+		{
+			assert_eq!(token_pair.0, token_pair.1);
+		}
+	}
 }
