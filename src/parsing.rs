@@ -3,7 +3,7 @@ pub mod tokenization;
 pub use operators::*;
 
 use std::collections::VecDeque;
-use tokenization::{Token, TokenStream};
+use tokenization::{InvalidTokenError, Token, TokenStream};
 
 // TODO: better name -morgan 2023-09-03
 #[derive(Debug, PartialEq)]
@@ -13,7 +13,7 @@ pub enum Node
 	Operator(Operator),
 }
 
-pub fn rpn_queue_from(string: &str) -> VecDeque<Node>
+pub fn rpn_queue_from(string: &str) -> Result<VecDeque<Node>, InvalidTokenError>
 {
 	let stream = TokenStream::new(string);
 	let mut output_queue = VecDeque::<Node>::new();
@@ -22,6 +22,7 @@ pub fn rpn_queue_from(string: &str) -> VecDeque<Node>
 	let mut previous: Option<Token> = None;
 	for token in stream
 	{
+		let token = token?;
 		match token
 		{
 			Token::Number(num) =>
@@ -96,7 +97,7 @@ pub fn rpn_queue_from(string: &str) -> VecDeque<Node>
 		output_queue.push_back(Node::Operator(op));
 	}
 
-	output_queue
+	Ok(output_queue)
 }
 
 fn push_operator_to_stack(

@@ -35,6 +35,9 @@ enum TokenType
 	Whitespace,
 }
 
+#[derive(Debug)]
+pub struct InvalidTokenError {}
+
 pub struct TokenStream<'a>
 {
 	string: &'a str,
@@ -53,7 +56,7 @@ impl<'a> TokenStream<'a>
 }
 impl<'a> Iterator for TokenStream<'a>
 {
-	type Item = Token;
+	type Item = Result<Token, InvalidTokenError>;
 	fn next(&mut self) -> Option<Self::Item>
 	{
 		if self.current_index >= self.string.len()
@@ -79,28 +82,27 @@ impl<'a> Iterator for TokenStream<'a>
 					{
 						if let Ok(n) = mtch.as_str().parse::<f64>()
 						{
-							Some(Token::Number(n))
+							Some(Ok(Token::Number(n)))
 						}
 						else
 						{
-							// this is actually kinda semantically incorrect? but it works for now // -morg 2023-09-07
-							None
+							Some(Err(InvalidTokenError {}))
 						}
 					}
 					TokenType::Operator =>
 					{
 						if let Ok(op) = mtch.as_str().parse::<OperatorToken>()
 						{
-							Some(Token::Operator(op))
+							Some(Ok(Token::Operator(op)))
 						}
 						else
 						{
-							None
+							Some(Err(InvalidTokenError {}))
 						}
 					}
-					TokenType::Delimiter => Some(Token::Delimiter {
+					TokenType::Delimiter => Some(Ok(Token::Delimiter {
 						is_open: mtch.as_str() == "(",
-					}),
+					})),
 					TokenType::Whitespace => self.next(),
 				};
 			}
