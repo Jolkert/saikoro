@@ -3,7 +3,7 @@ mod parsing;
 #[cfg(test)]
 mod tests
 {
-	use crate::parsing::tokenization::{InvalidTokenError, OperatorToken, Token, TokenStream};
+	use crate::parsing::tokenization::{OperatorToken, Token, TokenStream};
 	use crate::parsing::{self, Associativity, Node, Operator};
 
 	#[test]
