@@ -53,11 +53,7 @@ pub fn rpn_queue_from(string: &str) -> Result<VecDeque<Node>, InvalidTokenError>
 						Some(Token::Number(_)) | Some(Token::Delimiter { is_open: true }) =>
 						{
 							push_operator_to_stack(
-								Operator {
-									priority: Priority::MULTIPLICITIVE,
-									valency: Valency::Binary,
-									associativity: Associativity::Left,
-								},
+								Operator::from_token(&OperatorToken::Multiply, Valency::Binary),
 								&mut operator_stack,
 								&mut output_queue,
 							)
