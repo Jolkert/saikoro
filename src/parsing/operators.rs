@@ -7,6 +7,41 @@ pub struct Operator
 	pub valency: Valency,
 	pub associativity: Associativity,
 }
+impl Operator
+{
+	pub fn from_token(token: &OperatorToken, valency: Valency) -> Self
+	{
+		let priority = match token
+		{
+			OperatorToken::Plus | OperatorToken::Minus => Priority::ADDITIVE,
+			OperatorToken::Multiply | OperatorToken::Divide | OperatorToken::Modulus =>
+			{
+				Priority::MULTIPLICITIVE
+			}
+			OperatorToken::Power => Priority::POWER,
+			OperatorToken::Dice => Priority::DICE,
+			OperatorToken::Equals
+			| OperatorToken::NotEquals
+			| OperatorToken::GreaterThan
+			| OperatorToken::LessThan
+			| OperatorToken::GreaterOrEqual
+			| OperatorToken::LessOrEqual => Priority::COMPARISON,
+		};
+
+		Operator {
+			priority,
+			valency,
+			associativity: if matches!(token, OperatorToken::Power)
+			{
+				Associativity::Right
+			}
+			else
+			{
+				Associativity::Left
+			},
+		}
+	}
+}
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
 pub struct Priority(u32);
@@ -76,25 +111,7 @@ pub enum OperatorToken
 	GreaterOrEqual,
 	LessOrEqual,
 }
-impl OperatorToken
-{
-	pub fn priority(&self) -> Priority
-	{
-		match self
-		{
-			Self::Plus | Self::Minus => Priority::ADDITIVE,
-			Self::Multiply | Self::Divide | Self::Modulus => Priority::MULTIPLICITIVE,
-			Self::Power => Priority::POWER,
-			Self::Dice => Priority::DICE,
-			Self::Equals
-			| Self::NotEquals
-			| Self::GreaterThan
-			| Self::LessThan
-			| Self::GreaterOrEqual
-			| Self::LessOrEqual => Priority::COMPARISON,
-		}
-	}
-}
+
 impl FromStr for OperatorToken
 {
 	type Err = OperatorParseError;

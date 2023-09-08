@@ -32,22 +32,16 @@ pub fn rpn_queue_from(string: &str) -> Result<VecDeque<Node>, InvalidTokenError>
 			Token::Operator(ref op_token) =>
 			{
 				// this is a *complete* mess -morgan 2023-09-04
-				let operator = Operator {
-					valency: match previous
+
+				let operator = Operator::from_token(
+					op_token,
+					match previous
 					{
 						None | Some(Token::Operator(_)) => Valency::Unary,
 						_ => Valency::Binary,
 					},
-					priority: op_token.priority(),
-					associativity: if *op_token == OperatorToken::Power
-					{
-						Associativity::Right
-					}
-					else
-					{
-						Associativity::Left
-					},
-				};
+				);
+
 				push_operator_to_stack(operator, &mut operator_stack, &mut output_queue);
 			}
 			Token::Delimiter { is_open } =>
@@ -60,7 +54,7 @@ pub fn rpn_queue_from(string: &str) -> Result<VecDeque<Node>, InvalidTokenError>
 						{
 							push_operator_to_stack(
 								Operator {
-									priority: OperatorToken::Multiply.priority(),
+									priority: Priority::MULTIPLICITIVE,
 									valency: Valency::Binary,
 									associativity: Associativity::Left,
 								},
