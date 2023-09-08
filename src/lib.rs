@@ -4,7 +4,7 @@ mod parsing;
 mod tests
 {
 	use crate::parsing::tokenization::{OperatorToken, Token, TokenStream};
-	use crate::parsing::{self, Associativity, Node, Operator};
+	use crate::parsing::{self, Associativity, Node, Operator, Valency};
 
 	#[test]
 	fn bsaic_tokenization_test()
@@ -48,7 +48,7 @@ mod tests
 			output[3],
 			Node::Operator(Operator {
 				priority: OperatorToken::Multiply.priority(),
-				valency: 2,
+				valency: Valency::Binary,
 				associativity: Associativity::Left,
 			})
 		);
@@ -56,7 +56,7 @@ mod tests
 			output[4],
 			Node::Operator(Operator {
 				priority: OperatorToken::Plus.priority(),
-				valency: 2,
+				valency: Valency::Binary,
 				associativity: Associativity::Left,
 			})
 		);

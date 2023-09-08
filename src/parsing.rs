@@ -35,8 +35,8 @@ pub fn rpn_queue_from(string: &str) -> Result<VecDeque<Node>, InvalidTokenError>
 				let operator = Operator {
 					valency: match previous
 					{
-						None | Some(Token::Operator(_)) => 1,
-						_ => 2,
+						None | Some(Token::Operator(_)) => Valency::Unary,
+						_ => Valency::Binary,
 					},
 					priority: op_token.priority(),
 					associativity: if *op_token == OperatorToken::Power
@@ -61,7 +61,7 @@ pub fn rpn_queue_from(string: &str) -> Result<VecDeque<Node>, InvalidTokenError>
 							push_operator_to_stack(
 								Operator {
 									priority: OperatorToken::Multiply.priority(),
-									valency: 2,
+									valency: Valency::Binary,
 									associativity: Associativity::Left,
 								},
 								&mut operator_stack,
