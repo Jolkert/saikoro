@@ -2,6 +2,7 @@ mod operators;
 pub mod tokenization;
 pub use operators::*;
 
+use num_rational::Rational64 as r64;
 use std::collections::VecDeque;
 use tokenization::{InvalidTokenError, Token, TokenStream};
 
@@ -9,7 +10,7 @@ use tokenization::{InvalidTokenError, Token, TokenStream};
 #[derive(Debug, PartialEq)]
 pub enum Node
 {
-	Number(f64),
+	Number(r64),
 	Operator(Operator),
 }
 
