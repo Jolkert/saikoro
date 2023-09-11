@@ -15,7 +15,7 @@ lazy_static! {
 	};
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum Token
 {
 	Number(r64),
