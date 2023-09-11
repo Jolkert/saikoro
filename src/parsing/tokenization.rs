@@ -81,16 +81,12 @@ impl<'a> Iterator for TokenStream<'a>
 				{
 					TokenType::Number =>
 					{
-						if let Ok(f) = mtch.as_str().parse::<f64>()
+						if let Ok(Some(r)) = mtch
+							.as_str()
+							.parse::<f64>()
+							.and_then(|it| Ok(crate::r64_from_f64(it)))
 						{
-							if let Some(r) = crate::r64_from_f64(f)
-							{
-								Some(Ok(Token::Number(r)))
-							}
-							else
-							{
-								Some(Err(InvalidTokenError {}))
-							}
+							Some(Ok(Token::Number(r)))
 						}
 						else
 						{
