@@ -7,7 +7,7 @@ use std::collections::VecDeque;
 use tokenization::{InvalidTokenError, Token, TokenStream};
 
 // TODO: better name -morgan 2023-09-03
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum Node
 {
 	Number(r64),
