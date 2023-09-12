@@ -32,13 +32,13 @@ pub fn rpn_queue_from(string: &str) -> Result<VecDeque<Node>, InvalidTokenError>
 			}
 			Token::Operator(ref op_token) =>
 			{
-				// this is a *complete* mess -morgan 2023-09-04
-
 				let operator = Operator::from_token(
 					op_token,
 					match previous
 					{
-						None | Some(Token::Operator(_)) => Valency::Unary,
+						None
+						| Some(Token::Operator(_))
+						| Some(Token::Delimiter { is_open: true }) => Valency::Unary,
 						_ => Valency::Binary,
 					},
 				);
