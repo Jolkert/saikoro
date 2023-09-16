@@ -95,7 +95,7 @@ impl PartialOrd for RollSet
 	}
 }
 
-#[derive(PartialEq, Eq, PartialOrd, Ord)]
+#[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
 pub struct Roll
 {
 	pub value: i64,
@@ -110,6 +110,20 @@ impl Roll
 			value: self.value,
 			faces: self.faces,
 			removed: true,
+		}
+	}
+
+	fn remove_unless<F>(&self, predicate: F) -> Self
+	where
+		F: FnOnce(&Self) -> bool,
+	{
+		if !predicate(self)
+		{
+			self.remove()
+		}
+		else
+		{
+			self.clone()
 		}
 	}
 }

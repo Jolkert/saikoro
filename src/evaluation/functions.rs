@@ -1,6 +1,7 @@
-use super::{InvalidOperandError, Item};
+use super::{InvalidOperandError, Item, RollSet};
+type EvalResult = Result<Item, InvalidOperandError>;
 
-fn unary_plus(stack: &mut Vec<Item>) -> Result<Item, InvalidOperandError>
+fn unary_plus(stack: &mut Vec<Item>) -> EvalResult
 {
 	if let Some(i) = stack.pop()
 	{
@@ -12,7 +13,7 @@ fn unary_plus(stack: &mut Vec<Item>) -> Result<Item, InvalidOperandError>
 	}
 }
 
-fn unary_minus(stack: &mut Vec<Item>) -> Result<Item, InvalidOperandError>
+fn unary_minus(stack: &mut Vec<Item>) -> EvalResult
 {
 	if let Some(i) = stack.pop()
 	{
@@ -24,7 +25,7 @@ fn unary_minus(stack: &mut Vec<Item>) -> Result<Item, InvalidOperandError>
 	}
 }
 
-fn add(stack: &mut Vec<Item>) -> Result<Item, InvalidOperandError>
+fn add(stack: &mut Vec<Item>) -> EvalResult
 {
 	if let Some((rhs, lhs)) = double_pop(stack)
 	{
@@ -36,7 +37,7 @@ fn add(stack: &mut Vec<Item>) -> Result<Item, InvalidOperandError>
 	}
 }
 
-fn subtract(stack: &mut Vec<Item>) -> Result<Item, InvalidOperandError>
+fn subtract(stack: &mut Vec<Item>) -> EvalResult
 {
 	if let Some((rhs, lhs)) = double_pop(stack)
 	{
@@ -48,7 +49,7 @@ fn subtract(stack: &mut Vec<Item>) -> Result<Item, InvalidOperandError>
 	}
 }
 
-fn multiply(stack: &mut Vec<Item>) -> Result<Item, InvalidOperandError>
+fn multiply(stack: &mut Vec<Item>) -> EvalResult
 {
 	if let Some((rhs, lhs)) = double_pop(stack)
 	{
@@ -60,7 +61,7 @@ fn multiply(stack: &mut Vec<Item>) -> Result<Item, InvalidOperandError>
 	}
 }
 
-fn divide(stack: &mut Vec<Item>) -> Result<Item, InvalidOperandError>
+fn divide(stack: &mut Vec<Item>) -> EvalResult
 {
 	if let Some((rhs, lhs)) = double_pop(stack)
 	{
@@ -72,7 +73,7 @@ fn divide(stack: &mut Vec<Item>) -> Result<Item, InvalidOperandError>
 	}
 }
 
-fn modulo(stack: &mut Vec<Item>) -> Result<Item, InvalidOperandError>
+fn modulo(stack: &mut Vec<Item>) -> EvalResult
 {
 	if let Some((rhs, lhs)) = double_pop(stack)
 	{
@@ -84,11 +85,113 @@ fn modulo(stack: &mut Vec<Item>) -> Result<Item, InvalidOperandError>
 	}
 }
 
-fn pow(stack: &mut Vec<Item>) -> Result<Item, InvalidOperandError>
+fn pow(stack: &mut Vec<Item>) -> EvalResult
 {
 	if let Some((rhs, lhs)) = double_pop(stack)
 	{
 		Ok(Item::Number(lhs.value().powf(rhs.value())))
+	}
+	else
+	{
+		Err(InvalidOperandError {})
+	}
+}
+
+fn equal(stack: &mut Vec<Item>) -> EvalResult
+{
+	if let Some((rhs, Item::Roll(lhs))) = double_pop(stack)
+	{
+		Ok(Item::Roll(RollSet(
+			lhs.0
+				.iter()
+				.map(|it| it.remove_unless(|r| r.value as f64 == rhs.value()))
+				.collect(),
+		)))
+	}
+	else
+	{
+		Err(InvalidOperandError {})
+	}
+}
+
+fn not_equal(stack: &mut Vec<Item>) -> EvalResult
+{
+	if let Some((rhs, Item::Roll(lhs))) = double_pop(stack)
+	{
+		Ok(Item::Roll(RollSet(
+			lhs.0
+				.iter()
+				.map(|it| it.remove_unless(|r| r.value as f64 != rhs.value()))
+				.collect(),
+		)))
+	}
+	else
+	{
+		Err(InvalidOperandError {})
+	}
+}
+
+fn filter_greater(stack: &mut Vec<Item>) -> EvalResult
+{
+	if let Some((rhs, Item::Roll(lhs))) = double_pop(stack)
+	{
+		Ok(Item::Roll(RollSet(
+			lhs.0
+				.iter()
+				.map(|it| it.remove_unless(|r| r.value as f64 > rhs.value()))
+				.collect(),
+		)))
+	}
+	else
+	{
+		Err(InvalidOperandError {})
+	}
+}
+
+fn filter_less(stack: &mut Vec<Item>) -> EvalResult
+{
+	if let Some((rhs, Item::Roll(lhs))) = double_pop(stack)
+	{
+		Ok(Item::Roll(RollSet(
+			lhs.0
+				.iter()
+				.map(|it| it.remove_unless(|r| (r.value as f64) < rhs.value()))
+				.collect(),
+		)))
+	}
+	else
+	{
+		Err(InvalidOperandError {})
+	}
+}
+
+fn filter_greater_equal(stack: &mut Vec<Item>) -> EvalResult
+{
+	if let Some((rhs, Item::Roll(lhs))) = double_pop(stack)
+	{
+		Ok(Item::Roll(RollSet(
+			lhs.0
+				.iter()
+				.map(|it| it.remove_unless(|r| r.value as f64 >= rhs.value()))
+				.collect(),
+		)))
+	}
+	else
+	{
+		Err(InvalidOperandError {})
+	}
+}
+
+fn filter_less_equal(stack: &mut Vec<Item>) -> EvalResult
+{
+	if let Some((rhs, Item::Roll(lhs))) = double_pop(stack)
+	{
+		Ok(Item::Roll(RollSet(
+			lhs.0
+				.iter()
+				.map(|it| it.remove_unless(|r| r.value as f64 <= rhs.value()))
+				.collect(),
+		)))
 	}
 	else
 	{
