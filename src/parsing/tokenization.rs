@@ -2,7 +2,6 @@ pub use super::operators::OperatorToken;
 
 use lazy_static::lazy_static;
 use maplit::hashmap;
-use num_rational::Rational64 as r64;
 use regex::Regex;
 use std::collections::HashMap;
 
@@ -15,10 +14,10 @@ lazy_static! {
 	};
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq)]
 pub enum Token
 {
-	Number(r64),
+	Number(f64),
 	Operator(OperatorToken),
 	Delimiter
 	{
@@ -81,12 +80,9 @@ impl<'a> Iterator for TokenStream<'a>
 				{
 					TokenType::Number =>
 					{
-						if let Ok(Some(r)) = mtch
-							.as_str()
-							.parse::<f64>()
-							.and_then(|it| Ok(crate::r64_from_f64(it)))
+						if let Ok(n) = mtch.as_str().parse::<f64>()
 						{
-							Some(Ok(Token::Number(r)))
+							Some(Ok(Token::Number(n)))
 						}
 						else
 						{

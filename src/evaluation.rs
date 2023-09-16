@@ -1,21 +1,19 @@
 use std::{cmp::Ordering, ops};
 
-use num_rational::Rational64 as r64;
-
-#[derive(PartialEq, Eq, PartialOrd, Ord)]
+#[derive(PartialEq, PartialOrd)]
 enum Item
 {
-	Number(r64),
+	Number(f64),
 	Roll(RollSet),
 }
 impl Item
 {
-	fn value(&self) -> r64
+	fn value(&self) -> f64
 	{
 		match self
 		{
 			Self::Number(n) => *n,
-			Self::Roll(r) => r.total(),
+			Self::Roll(r) => r.total() as f64,
 		}
 	}
 }
@@ -57,7 +55,7 @@ impl ops::Div for Item
 	type Output = Self;
 	fn div(self, rhs: Self) -> Self::Output
 	{
-		self * Item::Number(r64::from_integer(1) / rhs.value())
+		self * Item::Number(1.0 / rhs.value())
 	}
 }
 
@@ -70,13 +68,12 @@ impl ops::Rem for Item
 	}
 }
 
-#[derive(Eq)]
 pub struct RollSet(Vec<Roll>);
 impl RollSet
 {
-	pub fn total(&self) -> r64
+	pub fn total(&self) -> i64
 	{
-		r64::from_integer(self.0.iter().map(|it| it.value).sum())
+		self.0.iter().map(|it| it.value).sum()
 	}
 }
 impl PartialEq for RollSet
@@ -84,13 +81,6 @@ impl PartialEq for RollSet
 	fn eq(&self, other: &Self) -> bool
 	{
 		self.total() == other.total()
-	}
-}
-impl Ord for RollSet
-{
-	fn cmp(&self, other: &Self) -> Ordering
-	{
-		self.total().cmp(&other.total())
 	}
 }
 impl PartialOrd for RollSet
