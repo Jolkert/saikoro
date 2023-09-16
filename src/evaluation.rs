@@ -104,7 +104,7 @@ pub struct Roll
 }
 impl Roll
 {
-	fn remove(&self) -> Self
+	fn remove(self) -> Self
 	{
 		Roll {
 			value: self.value,
@@ -113,9 +113,9 @@ impl Roll
 		}
 	}
 
-	fn remove_unless<F>(&self, predicate: F) -> Self
+	fn remove_unless<F>(self, predicate: F) -> Self
 	where
-		F: FnOnce(&Self) -> bool,
+		F: FnOnce(Self) -> bool,
 	{
 		if !predicate(self)
 		{
