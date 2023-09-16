@@ -84,6 +84,18 @@ fn modulo(stack: &mut Vec<Item>) -> Result<Item, InvalidOperandError>
 	}
 }
 
+fn pow(stack: &mut Vec<Item>) -> Result<Item, InvalidOperandError>
+{
+	if let Some((rhs, lhs)) = double_pop(stack)
+	{
+		Ok(Item::Number(lhs.value().powf(rhs.value())))
+	}
+	else
+	{
+		Err(InvalidOperandError {})
+	}
+}
+
 fn double_pop<T>(vec: &mut Vec<T>) -> Option<(T, T)>
 {
 	if let (Some(first), Some(second)) = (vec.pop(), vec.pop())
