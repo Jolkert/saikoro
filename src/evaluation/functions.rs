@@ -26,7 +26,7 @@ fn unary_minus(stack: &mut Vec<Item>) -> Result<Item, InvalidOperandError>
 
 fn add(stack: &mut Vec<Item>) -> Result<Item, InvalidOperandError>
 {
-	if let (Some(rhs), Some(lhs)) = (stack.pop(), stack.pop())
+	if let Some((rhs, lhs)) = double_pop(stack)
 	{
 		Ok(lhs + rhs)
 	}
@@ -38,7 +38,7 @@ fn add(stack: &mut Vec<Item>) -> Result<Item, InvalidOperandError>
 
 fn subtract(stack: &mut Vec<Item>) -> Result<Item, InvalidOperandError>
 {
-	if let (Some(rhs), Some(lhs)) = (stack.pop(), stack.pop())
+	if let Some((rhs, lhs)) = double_pop(stack)
 	{
 		Ok(rhs - lhs)
 	}
@@ -50,7 +50,7 @@ fn subtract(stack: &mut Vec<Item>) -> Result<Item, InvalidOperandError>
 
 fn multiply(stack: &mut Vec<Item>) -> Result<Item, InvalidOperandError>
 {
-	if let (Some(rhs), Some(lhs)) = (stack.pop(), stack.pop())
+	if let Some((rhs, lhs)) = double_pop(stack)
 	{
 		Ok(rhs * lhs)
 	}
@@ -62,7 +62,7 @@ fn multiply(stack: &mut Vec<Item>) -> Result<Item, InvalidOperandError>
 
 fn divide(stack: &mut Vec<Item>) -> Result<Item, InvalidOperandError>
 {
-	if let (Some(rhs), Some(lhs)) = (stack.pop(), stack.pop())
+	if let Some((rhs, lhs)) = double_pop(stack)
 	{
 		Ok(lhs / rhs)
 	}
@@ -74,12 +74,24 @@ fn divide(stack: &mut Vec<Item>) -> Result<Item, InvalidOperandError>
 
 fn modulo(stack: &mut Vec<Item>) -> Result<Item, InvalidOperandError>
 {
-	if let (Some(rhs), Some(lhs)) = (stack.pop(), stack.pop())
+	if let Some((rhs, lhs)) = double_pop(stack)
 	{
 		Ok(lhs % rhs)
 	}
 	else
 	{
 		Err(InvalidOperandError {})
+	}
+}
+
+fn double_pop<T>(vec: &mut Vec<T>) -> Option<(T, T)>
+{
+	if let (Some(first), Some(second)) = (vec.pop(), vec.pop())
+	{
+		Some((first, second))
+	}
+	else
+	{
+		None
 	}
 }
