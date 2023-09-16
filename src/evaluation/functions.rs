@@ -1,4 +1,8 @@
+use crate::evaluation::Roll;
+
 use super::{InvalidOperandError, Item, RollSet};
+use rand::prelude::*;
+
 type EvalResult = Result<Item, InvalidOperandError>;
 
 fn unary_plus(stack: &mut Vec<Item>) -> EvalResult
@@ -90,6 +94,30 @@ fn pow(stack: &mut Vec<Item>) -> EvalResult
 	if let Some((rhs, lhs)) = double_pop(stack)
 	{
 		Ok(Item::Number(lhs.value().powf(rhs.value())))
+	}
+	else
+	{
+		Err(InvalidOperandError {})
+	}
+}
+
+fn roll(stack: &mut Vec<Item>) -> EvalResult
+{
+	if let Some((rhs, lhs)) = double_pop(stack)
+	{
+		let mut roll_vec = Vec::<Roll>::new();
+		let faces = rhs.value() as u64;
+
+		for i in 0..(lhs.value() as u64)
+		{
+			roll_vec.push(Roll {
+				value: rand::thread_rng().gen_range(0..faces + 1),
+				faces,
+				removed: false,
+			});
+		}
+
+		Ok(Item::Roll(RollSet(roll_vec)))
 	}
 	else
 	{

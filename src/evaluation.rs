@@ -1,3 +1,5 @@
+mod functions;
+
 use std::{cmp::Ordering, ops};
 
 #[derive(PartialEq, PartialOrd)]
@@ -71,7 +73,7 @@ impl ops::Rem for Item
 pub struct RollSet(Vec<Roll>);
 impl RollSet
 {
-	pub fn total(&self) -> i64
+	pub fn total(&self) -> u64
 	{
 		self.0
 			.iter()
@@ -98,7 +100,7 @@ impl PartialOrd for RollSet
 #[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
 pub struct Roll
 {
-	pub value: i64,
+	pub value: u64,
 	pub faces: u64,
 	pub removed: bool,
 }
@@ -130,5 +132,3 @@ impl Roll
 
 #[derive(Debug)]
 struct InvalidOperandError();
-
-mod functions;
