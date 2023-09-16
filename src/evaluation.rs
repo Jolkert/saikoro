@@ -73,7 +73,11 @@ impl RollSet
 {
 	pub fn total(&self) -> i64
 	{
-		self.0.iter().map(|it| it.value).sum()
+		self.0
+			.iter()
+			.filter(|it| !it.removed)
+			.map(|it| it.value)
+			.sum()
 	}
 }
 impl PartialEq for RollSet
@@ -96,6 +100,18 @@ pub struct Roll
 {
 	pub value: i64,
 	pub faces: u64,
+	pub removed: bool,
+}
+impl Roll
+{
+	fn remove(&self) -> Self
+	{
+		Roll {
+			value: self.value,
+			faces: self.faces,
+			removed: true,
+		}
+	}
 }
 
 #[derive(Debug)]
