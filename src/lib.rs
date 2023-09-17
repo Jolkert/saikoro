@@ -1,3 +1,7 @@
+// TODO: please turn this off before you ever consider this even close to finished because that
+// would be incredibly stupid of you. im just sick of seeing 30+ warnings when im still not done
+// implementing everything >:( -morgan 20203-09-17
+#![allow(dead_code)]
 mod evaluation;
 mod parsing;
 
