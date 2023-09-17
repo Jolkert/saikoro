@@ -108,7 +108,7 @@ fn roll(stack: &mut Vec<Item>) -> EvalResult
 		let mut roll_vec = Vec::<Roll>::new();
 		let faces = rhs.value() as u64;
 
-		for i in 0..(lhs.value() as u64)
+		for _ in 0..(lhs.value() as u64)
 		{
 			roll_vec.push(Roll {
 				value: rand::thread_rng().gen_range(0..faces + 1),
@@ -129,12 +129,9 @@ fn equal(stack: &mut Vec<Item>) -> EvalResult
 {
 	if let Some((rhs, Item::Roll(lhs))) = double_pop(stack)
 	{
-		Ok(Item::Roll(RollSet(
-			lhs.0
-				.iter()
-				.map(|it| it.remove_unless(|r| r.value as f64 == rhs.value()))
-				.collect(),
-		)))
+		Ok(Item::Roll(filter_condition(lhs, |r| {
+			r.value as f64 == rhs.value()
+		})))
 	}
 	else
 	{
@@ -146,12 +143,9 @@ fn not_equal(stack: &mut Vec<Item>) -> EvalResult
 {
 	if let Some((rhs, Item::Roll(lhs))) = double_pop(stack)
 	{
-		Ok(Item::Roll(RollSet(
-			lhs.0
-				.iter()
-				.map(|it| it.remove_unless(|r| r.value as f64 != rhs.value()))
-				.collect(),
-		)))
+		Ok(Item::Roll(filter_condition(lhs, |r| {
+			r.value as f64 != rhs.value()
+		})))
 	}
 	else
 	{
@@ -163,12 +157,9 @@ fn filter_greater(stack: &mut Vec<Item>) -> EvalResult
 {
 	if let Some((rhs, Item::Roll(lhs))) = double_pop(stack)
 	{
-		Ok(Item::Roll(RollSet(
-			lhs.0
-				.iter()
-				.map(|it| it.remove_unless(|r| r.value as f64 > rhs.value()))
-				.collect(),
-		)))
+		Ok(Item::Roll(filter_condition(lhs, |r| {
+			r.value as f64 > rhs.value()
+		})))
 	}
 	else
 	{
@@ -180,12 +171,9 @@ fn filter_less(stack: &mut Vec<Item>) -> EvalResult
 {
 	if let Some((rhs, Item::Roll(lhs))) = double_pop(stack)
 	{
-		Ok(Item::Roll(RollSet(
-			lhs.0
-				.iter()
-				.map(|it| it.remove_unless(|r| (r.value as f64) < rhs.value()))
-				.collect(),
-		)))
+		Ok(Item::Roll(filter_condition(lhs, |r| {
+			(r.value as f64) < rhs.value()
+		})))
 	}
 	else
 	{
@@ -197,12 +185,9 @@ fn filter_greater_equal(stack: &mut Vec<Item>) -> EvalResult
 {
 	if let Some((rhs, Item::Roll(lhs))) = double_pop(stack)
 	{
-		Ok(Item::Roll(RollSet(
-			lhs.0
-				.iter()
-				.map(|it| it.remove_unless(|r| r.value as f64 >= rhs.value()))
-				.collect(),
-		)))
+		Ok(Item::Roll(filter_condition(lhs, |r| {
+			(r.value as f64) >= rhs.value()
+		})))
 	}
 	else
 	{
@@ -214,17 +199,27 @@ fn filter_less_equal(stack: &mut Vec<Item>) -> EvalResult
 {
 	if let Some((rhs, Item::Roll(lhs))) = double_pop(stack)
 	{
-		Ok(Item::Roll(RollSet(
-			lhs.0
-				.iter()
-				.map(|it| it.remove_unless(|r| r.value as f64 <= rhs.value()))
-				.collect(),
-		)))
+		Ok(Item::Roll(filter_condition(lhs, |r| {
+			(r.value as f64) <= rhs.value()
+		})))
 	}
 	else
 	{
 		Err(InvalidOperandError {})
 	}
+}
+
+fn filter_condition<F>(rolls: RollSet, predicate: F) -> RollSet
+where
+	F: Fn(Roll) -> bool,
+{
+	RollSet(
+		rolls
+			.0
+			.iter()
+			.map(|it| it.remove_unless(&predicate))
+			.collect(),
+	)
 }
 
 fn double_pop<T>(vec: &mut Vec<T>) -> Option<(T, T)>
