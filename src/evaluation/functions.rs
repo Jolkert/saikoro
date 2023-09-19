@@ -155,96 +155,46 @@ pub fn roll(stack: &mut Vec<Item>) -> EvalResult
 
 pub fn equal(stack: &mut Vec<Item>) -> EvalResult
 {
-	if let Some((rhs, Item::Roll(lhs))) = double_pop(stack)
-	{
-		Ok(Item::Roll(filter_condition(lhs, |r| {
-			r.value as f64 == rhs.value()
-		})))
-	}
-	else
-	{
-		Err(Error::MissingOperand {
-			expected: 2,
-			found: 0,
-		})
-	}
+	filter_condition(stack, |lhs, rhs| (lhs.value as f64) == rhs.value())
 }
 
 pub fn not_equal(stack: &mut Vec<Item>) -> EvalResult
 {
-	if let Some((rhs, Item::Roll(lhs))) = double_pop(stack)
-	{
-		Ok(Item::Roll(filter_condition(lhs, |r| {
-			r.value as f64 != rhs.value()
-		})))
-	}
-	else
-	{
-		Err(Error::MissingOperand {
-			expected: 2,
-			found: 0,
-		})
-	}
+	filter_condition(stack, |lhs, rhs| (lhs.value as f64) != rhs.value())
 }
 
 pub fn greater(stack: &mut Vec<Item>) -> EvalResult
 {
-	if let Some((rhs, Item::Roll(lhs))) = double_pop(stack)
-	{
-		Ok(Item::Roll(filter_condition(lhs, |r| {
-			r.value as f64 > rhs.value()
-		})))
-	}
-	else
-	{
-		Err(Error::MissingOperand {
-			expected: 2,
-			found: 0,
-		})
-	}
+	filter_condition(stack, |lhs, rhs| (lhs.value as f64) > rhs.value())
 }
 
 pub fn less(stack: &mut Vec<Item>) -> EvalResult
 {
-	if let Some((rhs, Item::Roll(lhs))) = double_pop(stack)
-	{
-		Ok(Item::Roll(filter_condition(lhs, |r| {
-			(r.value as f64) < rhs.value()
-		})))
-	}
-	else
-	{
-		Err(Error::MissingOperand {
-			expected: 2,
-			found: 0,
-		})
-	}
+	filter_condition(stack, |lhs, rhs| (lhs.value as f64) < rhs.value())
 }
 
 pub fn greater_or_equal(stack: &mut Vec<Item>) -> EvalResult
 {
-	if let Some((rhs, Item::Roll(lhs))) = double_pop(stack)
-	{
-		Ok(Item::Roll(filter_condition(lhs, |r| {
-			(r.value as f64) >= rhs.value()
-		})))
-	}
-	else
-	{
-		Err(Error::MissingOperand {
-			expected: 2,
-			found: 0,
-		})
-	}
+	filter_condition(stack, |lhs, rhs| (lhs.value as f64) >= rhs.value())
 }
 
 pub fn less_or_equal(stack: &mut Vec<Item>) -> EvalResult
 {
+	filter_condition(stack, |lhs, rhs| (lhs.value as f64) <= rhs.value())
+}
+
+fn filter_condition<F>(stack: &mut Vec<Item>, predicate: F) -> EvalResult
+where
+	F: Fn(Roll, &Item) -> bool,
+{
 	if let Some((rhs, Item::Roll(lhs))) = double_pop(stack)
 	{
-		Ok(Item::Roll(filter_condition(lhs, |r| {
-			(r.value as f64) <= rhs.value()
-		})))
+		Ok(Item::Roll(RollSet(
+			lhs.0
+				.iter()
+				.map(|it| it.remove_unless(|it| predicate(it, &rhs)))
+				.collect(),
+		)))
 	}
 	else
 	{
@@ -253,19 +203,6 @@ pub fn less_or_equal(stack: &mut Vec<Item>) -> EvalResult
 			found: 0,
 		})
 	}
-}
-
-fn filter_condition<F>(rolls: RollSet, predicate: F) -> RollSet
-where
-	F: Fn(Roll) -> bool,
-{
-	RollSet(
-		rolls
-			.0
-			.iter()
-			.map(|it| it.remove_unless(&predicate))
-			.collect(),
-	)
 }
 
 fn double_pop<T>(vec: &mut Vec<T>) -> Option<(T, T)>
