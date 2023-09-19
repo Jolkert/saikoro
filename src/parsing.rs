@@ -2,8 +2,9 @@ mod operators;
 pub mod tokenization;
 pub use operators::*;
 
+use crate::Error;
 use std::collections::VecDeque;
-use tokenization::{InvalidTokenError, Token, TokenStream};
+use tokenization::{Token, TokenStream};
 
 // TODO: better name -morgan 2023-09-03
 #[derive(Debug, PartialEq)]
@@ -13,7 +14,7 @@ pub enum Node
 	Operator(Operator),
 }
 
-pub fn rpn_queue_from(string: &str) -> Result<VecDeque<Node>, InvalidTokenError>
+pub fn rpn_queue_from(string: &str) -> Result<VecDeque<Node>, Error>
 {
 	let stream = TokenStream::new(string);
 	let mut output_queue = VecDeque::<Node>::new();

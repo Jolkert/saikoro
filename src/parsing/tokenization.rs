@@ -1,3 +1,5 @@
+use crate::Error;
+
 pub use super::operators::OperatorToken;
 
 use lazy_static::lazy_static;
@@ -35,9 +37,6 @@ enum TokenType
 	Whitespace,
 }
 
-#[derive(Debug)]
-pub struct InvalidTokenError {}
-
 pub struct TokenStream<'a>
 {
 	string: &'a str,
@@ -56,7 +55,7 @@ impl<'a> TokenStream<'a>
 }
 impl<'a> Iterator for TokenStream<'a>
 {
-	type Item = Result<Token, InvalidTokenError>;
+	type Item = Result<Token, Error>;
 	fn next(&mut self) -> Option<Self::Item>
 	{
 		if self.current_index >= self.string.len()
@@ -86,7 +85,7 @@ impl<'a> Iterator for TokenStream<'a>
 						}
 						else
 						{
-							Some(Err(InvalidTokenError {}))
+							Some(Err(Error::InvalidToken))
 						}
 					}
 					TokenType::Operator =>
@@ -97,7 +96,7 @@ impl<'a> Iterator for TokenStream<'a>
 						}
 						else
 						{
-							Some(Err(InvalidTokenError {}))
+							Some(Err(Error::InvalidToken))
 						}
 					}
 					TokenType::Delimiter => Some(Ok(Token::Delimiter {

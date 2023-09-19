@@ -1,9 +1,10 @@
 use crate::evaluation::Roll;
 
-use super::{InvalidOperandError, Item, RollSet};
+use super::{Item, RollSet};
+use crate::Error;
 use rand::prelude::*;
 
-type EvalResult = Result<Item, InvalidOperandError>;
+type EvalResult = Result<Item, Error>;
 
 pub fn unary_plus(stack: &mut Vec<Item>) -> EvalResult
 {
@@ -13,7 +14,10 @@ pub fn unary_plus(stack: &mut Vec<Item>) -> EvalResult
 	}
 	else
 	{
-		Err(InvalidOperandError {})
+		Err(Error::MissingOperand {
+			expected: 1,
+			found: 0,
+		})
 	}
 }
 
@@ -25,7 +29,10 @@ pub fn unary_minus(stack: &mut Vec<Item>) -> EvalResult
 	}
 	else
 	{
-		Err(InvalidOperandError {})
+		Err(Error::MissingOperand {
+			expected: 1,
+			found: 0,
+		})
 	}
 }
 
@@ -37,7 +44,10 @@ pub fn add(stack: &mut Vec<Item>) -> EvalResult
 	}
 	else
 	{
-		Err(InvalidOperandError {})
+		Err(Error::MissingOperand {
+			expected: 2,
+			found: 0, // this isnt really true fix this -morgan 2023-09-19
+		})
 	}
 }
 
@@ -49,7 +59,10 @@ pub fn subtract(stack: &mut Vec<Item>) -> EvalResult
 	}
 	else
 	{
-		Err(InvalidOperandError {})
+		Err(Error::MissingOperand {
+			expected: 2,
+			found: 0,
+		})
 	}
 }
 
@@ -61,7 +74,10 @@ pub fn multiply(stack: &mut Vec<Item>) -> EvalResult
 	}
 	else
 	{
-		Err(InvalidOperandError {})
+		Err(Error::MissingOperand {
+			expected: 2,
+			found: 0,
+		})
 	}
 }
 
@@ -73,7 +89,10 @@ pub fn divide(stack: &mut Vec<Item>) -> EvalResult
 	}
 	else
 	{
-		Err(InvalidOperandError {})
+		Err(Error::MissingOperand {
+			expected: 2,
+			found: 0,
+		})
 	}
 }
 
@@ -85,7 +104,10 @@ pub fn modulo(stack: &mut Vec<Item>) -> EvalResult
 	}
 	else
 	{
-		Err(InvalidOperandError {})
+		Err(Error::MissingOperand {
+			expected: 2,
+			found: 0,
+		})
 	}
 }
 
@@ -97,7 +119,10 @@ pub fn pow(stack: &mut Vec<Item>) -> EvalResult
 	}
 	else
 	{
-		Err(InvalidOperandError {})
+		Err(Error::MissingOperand {
+			expected: 2,
+			found: 0,
+		})
 	}
 }
 
@@ -121,7 +146,10 @@ pub fn roll(stack: &mut Vec<Item>) -> EvalResult
 	}
 	else
 	{
-		Err(InvalidOperandError {})
+		Err(Error::MissingOperand {
+			expected: 2,
+			found: 0,
+		})
 	}
 }
 
@@ -135,7 +163,10 @@ pub fn equal(stack: &mut Vec<Item>) -> EvalResult
 	}
 	else
 	{
-		Err(InvalidOperandError {})
+		Err(Error::MissingOperand {
+			expected: 2,
+			found: 0,
+		})
 	}
 }
 
@@ -149,7 +180,10 @@ pub fn not_equal(stack: &mut Vec<Item>) -> EvalResult
 	}
 	else
 	{
-		Err(InvalidOperandError {})
+		Err(Error::MissingOperand {
+			expected: 2,
+			found: 0,
+		})
 	}
 }
 
@@ -163,7 +197,10 @@ pub fn greater(stack: &mut Vec<Item>) -> EvalResult
 	}
 	else
 	{
-		Err(InvalidOperandError {})
+		Err(Error::MissingOperand {
+			expected: 2,
+			found: 0,
+		})
 	}
 }
 
@@ -177,7 +214,10 @@ pub fn less(stack: &mut Vec<Item>) -> EvalResult
 	}
 	else
 	{
-		Err(InvalidOperandError {})
+		Err(Error::MissingOperand {
+			expected: 2,
+			found: 0,
+		})
 	}
 }
 
@@ -191,7 +231,10 @@ pub fn greater_or_equal(stack: &mut Vec<Item>) -> EvalResult
 	}
 	else
 	{
-		Err(InvalidOperandError {})
+		Err(Error::MissingOperand {
+			expected: 2,
+			found: 0,
+		})
 	}
 }
 
@@ -205,7 +248,10 @@ pub fn less_or_equal(stack: &mut Vec<Item>) -> EvalResult
 	}
 	else
 	{
-		Err(InvalidOperandError {})
+		Err(Error::MissingOperand {
+			expected: 2,
+			found: 0,
+		})
 	}
 }
 

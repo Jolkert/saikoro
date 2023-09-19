@@ -1,6 +1,7 @@
 use std::{ops, str::FromStr};
 
-use crate::evaluation::{functions, InvalidOperandError, Item};
+use crate::evaluation::{functions, Item};
+use crate::Error;
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct Operator
@@ -46,7 +47,7 @@ impl Operator
 		}
 	}
 
-	pub fn eval_fn(&self) -> Box<dyn Fn(&mut Vec<Item>) -> Result<Item, InvalidOperandError>>
+	pub fn eval_fn(&self) -> Box<dyn Fn(&mut Vec<Item>) -> Result<Item, Error>>
 	{
 		use OperatorToken as Token;
 		Box::new(match self.token
@@ -87,7 +88,7 @@ impl Operator
 		})
 	}
 
-	pub fn eval(&self, stack: &mut Vec<Item>) -> Result<Item, InvalidOperandError>
+	pub fn eval(&self, stack: &mut Vec<Item>) -> Result<Item, Error>
 	{
 		self.eval_fn()(stack)
 	}

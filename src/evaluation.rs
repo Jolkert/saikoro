@@ -130,6 +130,3 @@ impl Roll
 		}
 	}
 }
-
-#[derive(Debug)]
-pub struct InvalidOperandError();
