@@ -38,118 +38,64 @@ pub fn unary_minus(stack: &mut Vec<Item>) -> EvalResult
 
 pub fn add(stack: &mut Vec<Item>) -> EvalResult
 {
-	if let Some((rhs, lhs)) = double_pop(stack)
-	{
-		Ok(lhs + rhs)
-	}
-	else
-	{
-		Err(Error::MissingOperand {
-			expected: 2,
-			found: 0, // this isnt really true fix this -morgan 2023-09-19
-		})
-	}
+	simple_binary_operation(stack, |lhs, rhs| lhs + rhs)
 }
 
 pub fn subtract(stack: &mut Vec<Item>) -> EvalResult
 {
-	if let Some((rhs, lhs)) = double_pop(stack)
-	{
-		Ok(rhs - lhs)
-	}
-	else
-	{
-		Err(Error::MissingOperand {
-			expected: 2,
-			found: 0,
-		})
-	}
+	simple_binary_operation(stack, |lhs, rhs| lhs - rhs)
 }
 
 pub fn multiply(stack: &mut Vec<Item>) -> EvalResult
 {
-	if let Some((rhs, lhs)) = double_pop(stack)
-	{
-		Ok(rhs * lhs)
-	}
-	else
-	{
-		Err(Error::MissingOperand {
-			expected: 2,
-			found: 0,
-		})
-	}
+	simple_binary_operation(stack, |lhs, rhs| lhs * rhs)
 }
 
 pub fn divide(stack: &mut Vec<Item>) -> EvalResult
 {
-	if let Some((rhs, lhs)) = double_pop(stack)
-	{
-		Ok(lhs / rhs)
-	}
-	else
-	{
-		Err(Error::MissingOperand {
-			expected: 2,
-			found: 0,
-		})
-	}
+	simple_binary_operation(stack, |lhs, rhs| lhs * rhs)
 }
 
 pub fn modulo(stack: &mut Vec<Item>) -> EvalResult
 {
-	if let Some((rhs, lhs)) = double_pop(stack)
-	{
-		Ok(lhs % rhs)
-	}
-	else
-	{
-		Err(Error::MissingOperand {
-			expected: 2,
-			found: 0,
-		})
-	}
+	simple_binary_operation(stack, |lhs, rhs| lhs % rhs)
 }
 
 pub fn pow(stack: &mut Vec<Item>) -> EvalResult
 {
-	if let Some((rhs, lhs)) = double_pop(stack)
-	{
-		Ok(Item::Number(lhs.value().powf(rhs.value())))
-	}
-	else
-	{
-		Err(Error::MissingOperand {
-			expected: 2,
-			found: 0,
-		})
-	}
+	simple_binary_operation(stack, |lhs, rhs| {
+		Item::Number(lhs.value().powf(rhs.value()))
+	})
 }
 
 pub fn roll(stack: &mut Vec<Item>) -> EvalResult
 {
-	if let Some((rhs, lhs)) = double_pop(stack)
+	match double_pop(stack)
 	{
-		let mut roll_vec = Vec::<Roll>::new();
-		let faces = rhs.value() as u64;
-
-		for _ in 0..(lhs.value() as u64)
+		Ok((rhs, lhs)) =>
 		{
-			roll_vec.push(Roll {
-				value: rand::thread_rng().gen_range(0..faces + 1),
-				faces,
-				removed: false,
-			});
-		}
+			let mut roll_vec = Vec::<Roll>::new();
+			let faces = rhs.value() as u64;
 
-		Ok(Item::Roll(RollSet(roll_vec)))
-	}
-	else
-	{
-		Err(Error::MissingOperand {
+			for _ in 0..(lhs.value() as u64)
+			{
+				roll_vec.push(Roll {
+					value: rand::thread_rng().gen_range(0..faces + 1),
+					faces,
+					removed: false,
+				});
+			}
+
+			Ok(Item::Roll(RollSet(roll_vec)))
+		}
+		Err(Reason::Empty) => Err(Error::MissingOperand {
 			expected: 2,
 			found: 0,
-		})
+		}),
+		Err(Reason::One) => Err(Error::MissingOperand {
+			expected: 2,
+			found: 1,
+		}),
 	}
 }
 
@@ -183,11 +129,29 @@ pub fn less_or_equal(stack: &mut Vec<Item>) -> EvalResult
 	filter_condition(stack, |lhs, rhs| (lhs.value as f64) <= rhs.value())
 }
 
+fn simple_binary_operation<F>(stack: &mut Vec<Item>, operation: F) -> EvalResult
+where
+	F: FnOnce(Item, Item) -> Item,
+{
+	match double_pop(stack)
+	{
+		Ok((rhs, lhs)) => Ok(operation(lhs, rhs)),
+		Err(Reason::Empty) => Err(Error::MissingOperand {
+			expected: 2,
+			found: 0,
+		}),
+		Err(Reason::One) => Err(Error::MissingOperand {
+			expected: 2,
+			found: 1,
+		}),
+	}
+}
+
 fn filter_condition<F>(stack: &mut Vec<Item>, predicate: F) -> EvalResult
 where
 	F: Fn(Roll, &Item) -> bool,
 {
-	if let Some((rhs, Item::Roll(lhs))) = double_pop(stack)
+	if let Ok((rhs, Item::Roll(lhs))) = double_pop(stack)
 	{
 		Ok(Item::Roll(RollSet(
 			lhs.0
@@ -205,14 +169,25 @@ where
 	}
 }
 
-fn double_pop<T>(vec: &mut Vec<T>) -> Option<(T, T)>
+fn double_pop<T>(vec: &mut Vec<T>) -> Result<(T, T), Reason> // bool: was_empty
 {
-	if let (Some(first), Some(second)) = (vec.pop(), vec.pop())
+	let double = (vec.pop(), vec.pop());
+	if let (Some(first), Some(second)) = double
 	{
-		Some((first, second))
+		Ok((first, second))
 	}
 	else
 	{
-		None
+		Err(match double
+		{
+			(None, None) => Reason::Empty,
+			_ => Reason::One,
+		})
 	}
+}
+
+enum Reason
+{
+	Empty,
+	One,
 }
