@@ -1,15 +1,18 @@
 use std::{ops, str::FromStr};
 
+use crate::evaluation::{functions, InvalidOperandError, Item};
+
 #[derive(Debug, PartialEq, Eq)]
 pub struct Operator
 {
 	pub priority: Priority,
 	pub valency: Valency,
 	pub associativity: Associativity,
+	pub token: OperatorToken,
 }
 impl Operator
 {
-	pub fn from_token(token: &OperatorToken, valency: Valency) -> Self
+	pub fn from_token(token: OperatorToken, valency: Valency) -> Self
 	{
 		let priority = match token
 		{
@@ -39,7 +42,54 @@ impl Operator
 			{
 				Associativity::Left
 			},
+			token,
 		}
+	}
+
+	pub fn eval_fn(&self) -> Box<dyn Fn(&mut Vec<Item>) -> Result<Item, InvalidOperandError>>
+	{
+		use OperatorToken as Token;
+		Box::new(match self.token
+		{
+			Token::Plus =>
+			{
+				if self.valency == Valency::Unary
+				{
+					functions::unary_plus
+				}
+				else
+				{
+					functions::add
+				}
+			}
+			Token::Minus =>
+			{
+				if self.valency == Valency::Unary
+				{
+					functions::unary_minus
+				}
+				else
+				{
+					functions::subtract
+				}
+			}
+			Token::Multiply => functions::multiply,
+			Token::Divide => functions::divide,
+			Token::Modulus => functions::modulo,
+			Token::Power => functions::pow,
+			Token::Dice => functions::roll,
+			Token::Equals => functions::equal,
+			Token::NotEquals => functions::not_equal,
+			Token::GreaterThan => functions::greater,
+			Token::LessThan => functions::less,
+			Token::GreaterOrEqual => functions::greater_or_equal,
+			Token::LessOrEqual => functions::less_or_equal,
+		})
+	}
+
+	pub fn eval(&self, stack: &mut Vec<Item>) -> Result<Item, InvalidOperandError>
+	{
+		self.eval_fn()(stack)
 	}
 }
 
@@ -94,7 +144,7 @@ pub enum OpOrDelim
 	},
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum OperatorToken
 {
 	Plus,

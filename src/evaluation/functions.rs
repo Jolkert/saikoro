@@ -5,7 +5,7 @@ use rand::prelude::*;
 
 type EvalResult = Result<Item, InvalidOperandError>;
 
-fn unary_plus(stack: &mut Vec<Item>) -> EvalResult
+pub fn unary_plus(stack: &mut Vec<Item>) -> EvalResult
 {
 	if let Some(i) = stack.pop()
 	{
@@ -17,7 +17,7 @@ fn unary_plus(stack: &mut Vec<Item>) -> EvalResult
 	}
 }
 
-fn unary_minus(stack: &mut Vec<Item>) -> EvalResult
+pub fn unary_minus(stack: &mut Vec<Item>) -> EvalResult
 {
 	if let Some(i) = stack.pop()
 	{
@@ -29,7 +29,7 @@ fn unary_minus(stack: &mut Vec<Item>) -> EvalResult
 	}
 }
 
-fn add(stack: &mut Vec<Item>) -> EvalResult
+pub fn add(stack: &mut Vec<Item>) -> EvalResult
 {
 	if let Some((rhs, lhs)) = double_pop(stack)
 	{
@@ -41,7 +41,7 @@ fn add(stack: &mut Vec<Item>) -> EvalResult
 	}
 }
 
-fn subtract(stack: &mut Vec<Item>) -> EvalResult
+pub fn subtract(stack: &mut Vec<Item>) -> EvalResult
 {
 	if let Some((rhs, lhs)) = double_pop(stack)
 	{
@@ -53,7 +53,7 @@ fn subtract(stack: &mut Vec<Item>) -> EvalResult
 	}
 }
 
-fn multiply(stack: &mut Vec<Item>) -> EvalResult
+pub fn multiply(stack: &mut Vec<Item>) -> EvalResult
 {
 	if let Some((rhs, lhs)) = double_pop(stack)
 	{
@@ -65,7 +65,7 @@ fn multiply(stack: &mut Vec<Item>) -> EvalResult
 	}
 }
 
-fn divide(stack: &mut Vec<Item>) -> EvalResult
+pub fn divide(stack: &mut Vec<Item>) -> EvalResult
 {
 	if let Some((rhs, lhs)) = double_pop(stack)
 	{
@@ -77,7 +77,7 @@ fn divide(stack: &mut Vec<Item>) -> EvalResult
 	}
 }
 
-fn modulo(stack: &mut Vec<Item>) -> EvalResult
+pub fn modulo(stack: &mut Vec<Item>) -> EvalResult
 {
 	if let Some((rhs, lhs)) = double_pop(stack)
 	{
@@ -89,7 +89,7 @@ fn modulo(stack: &mut Vec<Item>) -> EvalResult
 	}
 }
 
-fn pow(stack: &mut Vec<Item>) -> EvalResult
+pub fn pow(stack: &mut Vec<Item>) -> EvalResult
 {
 	if let Some((rhs, lhs)) = double_pop(stack)
 	{
@@ -101,7 +101,7 @@ fn pow(stack: &mut Vec<Item>) -> EvalResult
 	}
 }
 
-fn roll(stack: &mut Vec<Item>) -> EvalResult
+pub fn roll(stack: &mut Vec<Item>) -> EvalResult
 {
 	if let Some((rhs, lhs)) = double_pop(stack)
 	{
@@ -125,7 +125,7 @@ fn roll(stack: &mut Vec<Item>) -> EvalResult
 	}
 }
 
-fn equal(stack: &mut Vec<Item>) -> EvalResult
+pub fn equal(stack: &mut Vec<Item>) -> EvalResult
 {
 	if let Some((rhs, Item::Roll(lhs))) = double_pop(stack)
 	{
@@ -139,7 +139,7 @@ fn equal(stack: &mut Vec<Item>) -> EvalResult
 	}
 }
 
-fn not_equal(stack: &mut Vec<Item>) -> EvalResult
+pub fn not_equal(stack: &mut Vec<Item>) -> EvalResult
 {
 	if let Some((rhs, Item::Roll(lhs))) = double_pop(stack)
 	{
@@ -153,7 +153,7 @@ fn not_equal(stack: &mut Vec<Item>) -> EvalResult
 	}
 }
 
-fn filter_greater(stack: &mut Vec<Item>) -> EvalResult
+pub fn greater(stack: &mut Vec<Item>) -> EvalResult
 {
 	if let Some((rhs, Item::Roll(lhs))) = double_pop(stack)
 	{
@@ -167,7 +167,7 @@ fn filter_greater(stack: &mut Vec<Item>) -> EvalResult
 	}
 }
 
-fn filter_less(stack: &mut Vec<Item>) -> EvalResult
+pub fn less(stack: &mut Vec<Item>) -> EvalResult
 {
 	if let Some((rhs, Item::Roll(lhs))) = double_pop(stack)
 	{
@@ -181,7 +181,7 @@ fn filter_less(stack: &mut Vec<Item>) -> EvalResult
 	}
 }
 
-fn filter_greater_equal(stack: &mut Vec<Item>) -> EvalResult
+pub fn greater_or_equal(stack: &mut Vec<Item>) -> EvalResult
 {
 	if let Some((rhs, Item::Roll(lhs))) = double_pop(stack)
 	{
@@ -195,7 +195,7 @@ fn filter_greater_equal(stack: &mut Vec<Item>) -> EvalResult
 	}
 }
 
-fn filter_less_equal(stack: &mut Vec<Item>) -> EvalResult
+pub fn less_or_equal(stack: &mut Vec<Item>) -> EvalResult
 {
 	if let Some((rhs, Item::Roll(lhs))) = double_pop(stack)
 	{

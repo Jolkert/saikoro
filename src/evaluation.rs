@@ -1,9 +1,9 @@
-mod functions;
+pub mod functions;
 
 use std::{cmp::Ordering, ops};
 
-#[derive(PartialEq, PartialOrd)]
-enum Item
+#[derive(Debug, PartialEq, PartialOrd)]
+pub enum Item
 {
 	Number(f64),
 	Roll(RollSet),
@@ -70,6 +70,7 @@ impl ops::Rem for Item
 	}
 }
 
+#[derive(Debug)]
 pub struct RollSet(Vec<Roll>);
 impl RollSet
 {
@@ -97,7 +98,7 @@ impl PartialOrd for RollSet
 	}
 }
 
-#[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
 pub struct Roll
 {
 	pub value: u64,
@@ -131,4 +132,4 @@ impl Roll
 }
 
 #[derive(Debug)]
-struct InvalidOperandError();
+pub struct InvalidOperandError();

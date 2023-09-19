@@ -29,7 +29,7 @@ pub fn rpn_queue_from(string: &str) -> Result<VecDeque<Node>, InvalidTokenError>
 			{
 				output_queue.push_back(Node::Number(num));
 			}
-			Token::Operator(ref op_token) =>
+			Token::Operator(op_token) =>
 			{
 				let operator = Operator::from_token(
 					op_token,
@@ -53,7 +53,7 @@ pub fn rpn_queue_from(string: &str) -> Result<VecDeque<Node>, InvalidTokenError>
 						Some(Token::Number(_)) | Some(Token::Delimiter { is_open: true }) =>
 						{
 							push_operator_to_stack(
-								Operator::from_token(&OperatorToken::Multiply, Valency::Binary),
+								Operator::from_token(OperatorToken::Multiply, Valency::Binary),
 								&mut operator_stack,
 								&mut output_queue,
 							)

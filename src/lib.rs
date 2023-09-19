@@ -8,8 +8,9 @@ mod parsing;
 #[cfg(test)]
 mod tests
 {
+	use crate::evaluation::Item;
 	use crate::parsing::tokenization::{OperatorToken, Token, TokenStream};
-	use crate::parsing::{self, Associativity, Node, Operator, Priority, Valency};
+	use crate::parsing::{self, Node, Operator, Valency};
 
 	#[test]
 	fn bsaic_tokenization_test()
@@ -51,19 +52,14 @@ mod tests
 		assert_eq!(output[2], Node::Number(3.0));
 		assert_eq!(
 			output[3],
-			Node::Operator(Operator {
-				priority: Priority::MULTIPLICITIVE,
-				valency: Valency::Binary,
-				associativity: Associativity::Left,
-			})
+			Node::Operator(Operator::from_token(
+				OperatorToken::Multiply,
+				Valency::Binary
+			))
 		);
 		assert_eq!(
 			output[4],
-			Node::Operator(Operator {
-				priority: Priority::ADDITIVE,
-				valency: Valency::Binary,
-				associativity: Associativity::Left,
-			})
+			Node::Operator(Operator::from_token(OperatorToken::Plus, Valency::Binary))
 		);
 	}
 
@@ -82,6 +78,20 @@ mod tests
 		for token_pair in stream_no_whitespace.iter().zip(stream_whitespace.iter())
 		{
 			assert_eq!(token_pair.0, token_pair.1);
+		}
+	}
+
+	#[test]
+	fn eval_fn_test()
+	{
+		let plus = Operator::from_token(OperatorToken::Plus, Valency::Binary);
+		let mut item_stack = vec![Item::Number(2.0), Item::Number(5.0)];
+		let result = plus.eval(&mut item_stack);
+
+		match result
+		{
+			Ok(i) => assert_eq!(i, Item::Number(7.0)),
+			Err(_) => panic!(),
 		}
 	}
 }
