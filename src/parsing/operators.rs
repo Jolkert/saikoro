@@ -1,6 +1,6 @@
 use std::{ops, str::FromStr};
 
-use crate::evaluation::{functions, Item};
+use crate::evaluation::{functions, Operand};
 use crate::Error;
 
 #[derive(Debug, PartialEq, Eq)]
@@ -47,7 +47,7 @@ impl Operator
 		}
 	}
 
-	pub fn eval_fn(&self) -> Box<dyn Fn(&mut Vec<Item>) -> Result<Item, Error>>
+	pub fn eval_fn(&self) -> Box<dyn Fn(&mut Vec<Operand>) -> Result<Operand, Error>>
 	{
 		use OperatorToken as Token;
 		Box::new(match self.token
@@ -88,7 +88,7 @@ impl Operator
 		})
 	}
 
-	pub fn eval(&self, stack: &mut Vec<Item>) -> Result<Item, Error>
+	pub fn eval(&self, stack: &mut Vec<Operand>) -> Result<Operand, Error>
 	{
 		self.eval_fn()(stack)
 	}

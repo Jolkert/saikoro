@@ -1,12 +1,12 @@
 use crate::evaluation::Roll;
 
-use super::{Item, RollSet};
+use super::{Operand, RollSet};
 use crate::Error;
 use rand::prelude::*;
 
-type EvalResult = Result<Item, Error>;
+type EvalResult = Result<Operand, Error>;
 
-pub fn unary_plus(stack: &mut Vec<Item>) -> EvalResult
+pub fn unary_plus(stack: &mut Vec<Operand>) -> EvalResult
 {
 	if let Some(i) = stack.pop()
 	{
@@ -21,7 +21,7 @@ pub fn unary_plus(stack: &mut Vec<Item>) -> EvalResult
 	}
 }
 
-pub fn unary_minus(stack: &mut Vec<Item>) -> EvalResult
+pub fn unary_minus(stack: &mut Vec<Operand>) -> EvalResult
 {
 	if let Some(i) = stack.pop()
 	{
@@ -36,39 +36,39 @@ pub fn unary_minus(stack: &mut Vec<Item>) -> EvalResult
 	}
 }
 
-pub fn add(stack: &mut Vec<Item>) -> EvalResult
+pub fn add(stack: &mut Vec<Operand>) -> EvalResult
 {
 	simple_binary_operation(stack, |lhs, rhs| lhs + rhs)
 }
 
-pub fn subtract(stack: &mut Vec<Item>) -> EvalResult
+pub fn subtract(stack: &mut Vec<Operand>) -> EvalResult
 {
 	simple_binary_operation(stack, |lhs, rhs| lhs - rhs)
 }
 
-pub fn multiply(stack: &mut Vec<Item>) -> EvalResult
+pub fn multiply(stack: &mut Vec<Operand>) -> EvalResult
 {
 	simple_binary_operation(stack, |lhs, rhs| lhs * rhs)
 }
 
-pub fn divide(stack: &mut Vec<Item>) -> EvalResult
+pub fn divide(stack: &mut Vec<Operand>) -> EvalResult
 {
 	simple_binary_operation(stack, |lhs, rhs| lhs * rhs)
 }
 
-pub fn modulo(stack: &mut Vec<Item>) -> EvalResult
+pub fn modulo(stack: &mut Vec<Operand>) -> EvalResult
 {
 	simple_binary_operation(stack, |lhs, rhs| lhs % rhs)
 }
 
-pub fn pow(stack: &mut Vec<Item>) -> EvalResult
+pub fn pow(stack: &mut Vec<Operand>) -> EvalResult
 {
 	simple_binary_operation(stack, |lhs, rhs| {
-		Item::Number(lhs.value().powf(rhs.value()))
+		Operand::Number(lhs.value().powf(rhs.value()))
 	})
 }
 
-pub fn roll(stack: &mut Vec<Item>) -> EvalResult
+pub fn roll(stack: &mut Vec<Operand>) -> EvalResult
 {
 	match double_pop(stack)
 	{
@@ -86,7 +86,7 @@ pub fn roll(stack: &mut Vec<Item>) -> EvalResult
 				});
 			}
 
-			Ok(Item::Roll(RollSet(roll_vec)))
+			Ok(Operand::Roll(RollSet(roll_vec)))
 		}
 		Err(Reason::Empty) => Err(Error::MissingOperand {
 			expected: 2,
@@ -99,39 +99,39 @@ pub fn roll(stack: &mut Vec<Item>) -> EvalResult
 	}
 }
 
-pub fn equal(stack: &mut Vec<Item>) -> EvalResult
+pub fn equal(stack: &mut Vec<Operand>) -> EvalResult
 {
 	filter_condition(stack, |lhs, rhs| (lhs.value as f64) == rhs.value())
 }
 
-pub fn not_equal(stack: &mut Vec<Item>) -> EvalResult
+pub fn not_equal(stack: &mut Vec<Operand>) -> EvalResult
 {
 	filter_condition(stack, |lhs, rhs| (lhs.value as f64) != rhs.value())
 }
 
-pub fn greater(stack: &mut Vec<Item>) -> EvalResult
+pub fn greater(stack: &mut Vec<Operand>) -> EvalResult
 {
 	filter_condition(stack, |lhs, rhs| (lhs.value as f64) > rhs.value())
 }
 
-pub fn less(stack: &mut Vec<Item>) -> EvalResult
+pub fn less(stack: &mut Vec<Operand>) -> EvalResult
 {
 	filter_condition(stack, |lhs, rhs| (lhs.value as f64) < rhs.value())
 }
 
-pub fn greater_or_equal(stack: &mut Vec<Item>) -> EvalResult
+pub fn greater_or_equal(stack: &mut Vec<Operand>) -> EvalResult
 {
 	filter_condition(stack, |lhs, rhs| (lhs.value as f64) >= rhs.value())
 }
 
-pub fn less_or_equal(stack: &mut Vec<Item>) -> EvalResult
+pub fn less_or_equal(stack: &mut Vec<Operand>) -> EvalResult
 {
 	filter_condition(stack, |lhs, rhs| (lhs.value as f64) <= rhs.value())
 }
 
-fn simple_binary_operation<F>(stack: &mut Vec<Item>, operation: F) -> EvalResult
+fn simple_binary_operation<F>(stack: &mut Vec<Operand>, operation: F) -> EvalResult
 where
-	F: FnOnce(Item, Item) -> Item,
+	F: FnOnce(Operand, Operand) -> Operand,
 {
 	match double_pop(stack)
 	{
@@ -147,13 +147,13 @@ where
 	}
 }
 
-fn filter_condition<F>(stack: &mut Vec<Item>, predicate: F) -> EvalResult
+fn filter_condition<F>(stack: &mut Vec<Operand>, predicate: F) -> EvalResult
 where
-	F: Fn(Roll, &Item) -> bool,
+	F: Fn(Roll, &Operand) -> bool,
 {
-	if let Ok((rhs, Item::Roll(lhs))) = double_pop(stack)
+	if let Ok((rhs, Operand::Roll(lhs))) = double_pop(stack)
 	{
-		Ok(Item::Roll(RollSet(
+		Ok(Operand::Roll(RollSet(
 			lhs.0
 				.iter()
 				.map(|it| it.remove_unless(|it| predicate(it, &rhs)))

@@ -11,7 +11,7 @@ pub use error::Error;
 #[cfg(test)]
 mod tests
 {
-	use crate::evaluation::Item;
+	use crate::evaluation::Operand;
 	use crate::parsing::tokenization::{OperatorToken, Token, TokenStream};
 	use crate::parsing::{self, Node, Operator, Valency};
 
@@ -88,12 +88,12 @@ mod tests
 	fn eval_fn_test()
 	{
 		let plus = Operator::from_token(OperatorToken::Plus, Valency::Binary);
-		let mut item_stack = vec![Item::Number(2.0), Item::Number(5.0)];
+		let mut item_stack = vec![Operand::Number(2.0), Operand::Number(5.0)];
 		let result = plus.eval(&mut item_stack);
 
 		match result
 		{
-			Ok(i) => assert_eq!(i, Item::Number(7.0)),
+			Ok(i) => assert_eq!(i, Operand::Number(7.0)),
 			Err(_) => panic!(),
 		}
 	}

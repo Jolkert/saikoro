@@ -3,12 +3,12 @@ pub mod functions;
 use std::{cmp::Ordering, ops};
 
 #[derive(Debug, PartialEq, PartialOrd)]
-pub enum Item
+pub enum Operand
 {
 	Number(f64),
 	Roll(RollSet),
 }
-impl Item
+impl Operand
 {
 	fn value(&self) -> f64
 	{
@@ -19,24 +19,24 @@ impl Item
 		}
 	}
 }
-impl ops::Neg for Item
+impl ops::Neg for Operand
 {
 	type Output = Self;
 	fn neg(self) -> Self::Output
 	{
-		Item::Number(-self.value())
+		Operand::Number(-self.value())
 	}
 }
 
-impl ops::Add for Item
+impl ops::Add for Operand
 {
 	type Output = Self;
 	fn add(self, rhs: Self) -> Self::Output
 	{
-		Item::Number(self.value() + rhs.value())
+		Operand::Number(self.value() + rhs.value())
 	}
 }
-impl ops::Sub for Item
+impl ops::Sub for Operand
 {
 	type Output = Self;
 	fn sub(self, rhs: Self) -> Self::Output
@@ -44,29 +44,29 @@ impl ops::Sub for Item
 		self + (-rhs)
 	}
 }
-impl ops::Mul for Item
+impl ops::Mul for Operand
 {
 	type Output = Self;
 	fn mul(self, rhs: Self) -> Self::Output
 	{
-		Item::Number(self.value() * rhs.value())
+		Operand::Number(self.value() * rhs.value())
 	}
 }
-impl ops::Div for Item
+impl ops::Div for Operand
 {
 	type Output = Self;
 	fn div(self, rhs: Self) -> Self::Output
 	{
-		self * Item::Number(1.0 / rhs.value())
+		self * Operand::Number(1.0 / rhs.value())
 	}
 }
 
-impl ops::Rem for Item
+impl ops::Rem for Operand
 {
 	type Output = Self;
 	fn rem(self, rhs: Self) -> Self::Output
 	{
-		Item::Number(self.value() % rhs.value())
+		Operand::Number(self.value() % rhs.value())
 	}
 }
 
