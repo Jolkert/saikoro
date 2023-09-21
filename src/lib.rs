@@ -11,7 +11,7 @@ pub use error::Error;
 #[cfg(test)]
 mod tests
 {
-	use crate::evaluation::Operand;
+	use crate::evaluation::{self, Operand};
 	use crate::parsing::tokenization::{OperatorToken, Token, TokenStream};
 	use crate::parsing::{self, Node, Operator, Valency};
 
@@ -96,5 +96,21 @@ mod tests
 			Ok(i) => assert_eq!(i, Operand::Number(7.0)),
 			Err(_) => panic!(),
 		}
+	}
+
+	#[test]
+	fn basic_eval_test()
+	{
+		let result = evaluation::eval_string("2+3*5").unwrap();
+		assert_eq!(result, 17.0);
+
+		let result = evaluation::eval_string("2d6 + 5").unwrap();
+		assert!(result >= 7.0 && result <= 17.0);
+
+		let result = evaluation::eval_string("2^3^3").unwrap();
+		assert_eq!(result, 134_217_728.0);
+
+		let result = evaluation::eval_string("5 - 4 - 2").unwrap();
+		assert_eq!(result, -1.0);
 	}
 }
