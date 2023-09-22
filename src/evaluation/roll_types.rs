@@ -1,26 +1,41 @@
 use std::cmp::Ordering;
 
 #[derive(Debug)]
-pub struct RollSet(pub Vec<Roll>);
-impl RollSet
+pub struct DiceRoll
 {
+	rolls: Box<[Roll]>,
+	faces: u64,
+}
+impl DiceRoll
+{
+	pub fn new(faces: u64, rolls: Vec<Roll>) -> Self
+	{
+		DiceRoll {
+			rolls: rolls.into_boxed_slice(),
+			faces,
+		}
+	}
 	pub fn total(&self) -> u64
 	{
-		self.0
+		self.rolls
 			.iter()
 			.filter(|it| !it.removed)
 			.map(|it| it.value)
 			.sum()
 	}
+	pub fn iter(&self) -> std::slice::Iter<Roll>
+	{
+		self.rolls.iter()
+	}
 }
-impl PartialEq for RollSet
+impl PartialEq for DiceRoll
 {
 	fn eq(&self, other: &Self) -> bool
 	{
 		self.total() == other.total()
 	}
 }
-impl PartialOrd for RollSet
+impl PartialOrd for DiceRoll
 {
 	fn partial_cmp(&self, other: &Self) -> Option<Ordering>
 	{
@@ -32,16 +47,22 @@ impl PartialOrd for RollSet
 pub struct Roll
 {
 	pub value: u64,
-	pub faces: u64,
 	pub removed: bool,
 }
 impl Roll
 {
+	fn new(value: u64) -> Self
+	{
+		Roll {
+			value,
+			removed: false,
+		}
+	}
+
 	fn remove(self) -> Self
 	{
 		Roll {
 			value: self.value,
-			faces: self.faces,
 			removed: true,
 		}
 	}

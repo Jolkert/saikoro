@@ -1,12 +1,12 @@
 use std::ops;
 
-use super::RollSet;
+use super::DiceRoll;
 
 #[derive(Debug, PartialEq, PartialOrd)]
 pub enum Operand
 {
 	Number(f64),
-	Roll(RollSet),
+	Roll(DiceRoll),
 }
 impl Operand
 {

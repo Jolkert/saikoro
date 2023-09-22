@@ -1,6 +1,6 @@
 use crate::evaluation::Roll;
 
-use super::{Operand, RollSet};
+use super::{DiceRoll, Operand};
 use crate::Error;
 use rand::prelude::*;
 
@@ -81,12 +81,11 @@ pub fn roll(stack: &mut Vec<Operand>) -> EvalResult
 			{
 				roll_vec.push(Roll {
 					value: rand::thread_rng().gen_range(0..faces + 1),
-					faces,
 					removed: false,
 				});
 			}
 
-			Ok(Operand::Roll(RollSet(roll_vec)))
+			Ok(Operand::Roll(DiceRoll::new(faces, roll_vec)))
 		}
 		Err(Reason::Empty) => Err(Error::MissingOperand {
 			expected: 2,
@@ -153,9 +152,9 @@ where
 {
 	if let Ok((rhs, Operand::Roll(lhs))) = double_pop(stack)
 	{
-		Ok(Operand::Roll(RollSet(
-			lhs.0
-				.iter()
+		Ok(Operand::Roll(DiceRoll::new(
+			rhs.value() as u64,
+			lhs.iter()
 				.map(|it| it.remove_unless(|it| predicate(it, &rhs)))
 				.collect(),
 		)))
