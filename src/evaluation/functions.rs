@@ -79,10 +79,7 @@ pub fn roll(stack: &mut Vec<Operand>) -> EvalResult
 
 			for _ in 0..(lhs.value() as u64)
 			{
-				roll_vec.push(Roll {
-					value: rand::thread_rng().gen_range(0..faces + 1),
-					removed: false,
-				});
+				roll_vec.push(Roll::new(rand::thread_rng().gen_range(0..faces + 1)));
 			}
 
 			Ok(Operand::Roll(DiceRoll::new(faces, roll_vec)))
@@ -148,16 +145,13 @@ where
 
 fn filter_condition<F>(stack: &mut Vec<Operand>, predicate: F) -> EvalResult
 where
-	F: Fn(Roll, &Operand) -> bool,
+	F: Fn(&Roll, &Operand) -> bool,
 {
 	if let Ok((rhs, Operand::Roll(lhs))) = double_pop(stack)
 	{
-		Ok(Operand::Roll(DiceRoll::new(
-			rhs.value() as u64,
-			lhs.iter()
-				.map(|it| it.remove_unless(|it| predicate(it, &rhs)))
-				.collect(),
-		)))
+		lhs.iter()
+			.for_each(|it| it.remove_unless(|it| predicate(it, &rhs)));
+		Ok(Operand::Roll(lhs))
 	}
 	else
 	{
@@ -168,7 +162,7 @@ where
 	}
 }
 
-fn double_pop<T>(vec: &mut Vec<T>) -> Result<(T, T), Reason> // bool: was_empty
+fn double_pop<T>(vec: &mut Vec<T>) -> Result<(T, T), Reason>
 {
 	let double = (vec.pop(), vec.pop());
 	if let (Some(first), Some(second)) = double
