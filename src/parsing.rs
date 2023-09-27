@@ -84,7 +84,6 @@ pub fn rpn_queue_from(string: &str) -> Result<VecDeque<Node>, Error>
 
 	while let Some(OpOrDelim::Operator(op)) = operator_stack.pop()
 	{
-		print!("op!");
 		output_queue.push_back(Node::Operator(op));
 	}
 
