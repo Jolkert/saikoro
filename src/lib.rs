@@ -118,6 +118,6 @@ mod tests
 		assert!(result.is_ok_and(|it| it
 			.rolls
 			.iter()
-			.all(|it| it.iter().all(|it| it.value >= 1 && it.value <= 4))))
+			.all(|it| it.iter().all(|it| it.value >= 1 && it.value <= 4))));
 	}
 }
