@@ -47,7 +47,7 @@ impl Operator
 		}
 	}
 
-	pub fn eval_fn(&self) -> Box<dyn Fn(&mut Vec<Operand>) -> Result<Operand, Error>>
+	pub fn eval_fn(&self) -> Box<dyn Fn(&mut Vec<Operand>) -> Result<Option<Operand>, Error>>
 	{
 		use OperatorToken as Token;
 		Box::new(match self.token
@@ -88,7 +88,7 @@ impl Operator
 		})
 	}
 
-	pub fn eval(&self, stack: &mut Vec<Operand>) -> Result<Operand, Error>
+	pub fn eval(&self, stack: &mut Vec<Operand>) -> Result<Option<Operand>, Error>
 	{
 		self.eval_fn()(stack)
 	}

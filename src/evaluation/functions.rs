@@ -1,16 +1,18 @@
+use std::rc::Rc;
+
 use crate::evaluation::Roll;
 
 use super::{DiceRoll, Operand};
 use crate::Error;
 use rand::prelude::*;
 
-type EvalResult = Result<Operand, Error>;
+type EvalResult = Result<Option<Operand>, Error>;
 
 pub fn unary_plus(stack: &mut Vec<Operand>) -> EvalResult
 {
 	if let Some(i) = stack.pop()
 	{
-		Ok(i)
+		Ok(Some(Operand::Number(i.value())))
 	}
 	else
 	{
@@ -25,7 +27,7 @@ pub fn unary_minus(stack: &mut Vec<Operand>) -> EvalResult
 {
 	if let Some(i) = stack.pop()
 	{
-		Ok(-i)
+		Ok(Some(-i))
 	}
 	else
 	{
@@ -79,10 +81,10 @@ pub fn roll(stack: &mut Vec<Operand>) -> EvalResult
 
 			for _ in 0..(lhs.value() as u64)
 			{
-				roll_vec.push(Roll::new(rand::thread_rng().gen_range(0..faces + 1)));
+				roll_vec.push(Roll::new(rand::thread_rng().gen_range(0..faces) + 1));
 			}
 
-			Ok(Operand::Roll(DiceRoll::new(faces, roll_vec)))
+			Ok(Some(Operand::Roll(Rc::new(DiceRoll::new(faces, roll_vec))))) // oh god so many parens -morgan 2023-09-27
 		}
 		Err(Reason::Empty) => Err(Error::MissingOperand {
 			expected: 2,
@@ -131,7 +133,7 @@ where
 {
 	match double_pop(stack)
 	{
-		Ok((rhs, lhs)) => Ok(operation(lhs, rhs)),
+		Ok((rhs, lhs)) => Ok(Some(operation(lhs, rhs))),
 		Err(Reason::Empty) => Err(Error::MissingOperand {
 			expected: 2,
 			found: 0,
@@ -151,7 +153,8 @@ where
 	{
 		lhs.iter()
 			.for_each(|it| it.remove_unless(|it| predicate(it, &rhs)));
-		Ok(Operand::Roll(lhs))
+		stack.push(Operand::Roll(lhs));
+		Ok(None)
 	}
 	else
 	{

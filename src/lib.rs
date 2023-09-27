@@ -93,7 +93,7 @@ mod tests
 
 		match result
 		{
-			Ok(i) => assert_eq!(i, Operand::Number(7.0)),
+			Ok(i) => assert_eq!(i, Some(Operand::Number(7.0))),
 			Err(_) => panic!(),
 		}
 	}
@@ -102,15 +102,22 @@ mod tests
 	fn basic_eval_test()
 	{
 		let result = evaluation::eval_string("2+3*5").unwrap();
-		assert_eq!(result, 17.0);
+		assert_eq!(result.value, 17.0);
 
 		let result = evaluation::eval_string("2d6 + 5").unwrap();
-		assert!(result >= 7.0 && result <= 17.0);
+		assert!(result.value >= 7.0 && result.value <= 17.0);
 
 		let result = evaluation::eval_string("2^3^3").unwrap();
-		assert_eq!(result, 134_217_728.0);
+		assert_eq!(result.value, 134_217_728.0);
 
 		let result = evaluation::eval_string("5 - 4 - 2").unwrap();
-		assert_eq!(result, -1.0);
+		assert_eq!(result.value, -1.0);
+
+		let result = evaluation::eval_string("10d4");
+		// 	assert each individual roll in range [1, 4]. not confusing looking at all i promise -morgan 2023-09-27
+		assert!(result.is_ok_and(|it| it
+			.rolls
+			.iter()
+			.all(|it| it.iter().all(|it| it.value >= 1 && it.value <= 4))))
 	}
 }

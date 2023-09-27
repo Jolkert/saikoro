@@ -1,4 +1,4 @@
-use std::ops;
+use std::{ops, rc::Rc};
 
 use super::DiceRoll;
 
@@ -6,7 +6,7 @@ use super::DiceRoll;
 pub enum Operand
 {
 	Number(f64),
-	Roll(DiceRoll),
+	Roll(Rc<DiceRoll>),
 }
 impl Operand
 {
