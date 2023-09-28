@@ -1,4 +1,4 @@
-use std::{ops, rc::Rc};
+use std::ops;
 
 use super::DiceRoll;
 
@@ -6,7 +6,11 @@ use super::DiceRoll;
 pub enum Operand
 {
 	Number(f64),
-	Roll(Rc<DiceRoll>),
+	Roll
+	{
+		id: u64,
+		data: DiceRoll,
+	},
 }
 impl Operand
 {
@@ -15,7 +19,7 @@ impl Operand
 		match self
 		{
 			Self::Number(n) => *n,
-			Self::Roll(r) => r.total() as f64,
+			Self::Roll { data: r, id: _ } => r.total() as f64,
 		}
 	}
 }

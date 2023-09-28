@@ -1,7 +1,7 @@
 pub mod functions;
 mod operand;
 mod roll_types;
-use std::rc::Rc;
+use std::collections::HashMap;
 
 pub use operand::*;
 pub use roll_types::*;
@@ -15,14 +15,14 @@ use crate::{
 pub struct DiceEvaluation
 {
 	pub value: f64,
-	pub rolls: Box<[Rc<DiceRoll>]>, // this really isnt necessary
+	pub rolls: Box<[DiceRoll]>, // this really isnt necessary
 }
 
 pub fn eval_string(input: &str) -> Result<DiceEvaluation, Error>
 {
 	let mut rpn_queue = parsing::rpn_queue_from(input)?;
 	let mut eval_stack = Vec::<Operand>::new();
-	let mut roll_list = Vec::<Rc<DiceRoll>>::new();
+	let mut roll_list = HashMap::<u64, DiceRoll>::new();
 
 	loop
 	{
@@ -31,20 +31,15 @@ pub fn eval_string(input: &str) -> Result<DiceEvaluation, Error>
 			match current
 			{
 				Node::Number(n) => eval_stack.push(Operand::Number(n)),
-				Node::Operator(op) =>
+				Node::Operator(op) => match op.eval(&mut eval_stack)?
 				{
-					let result = op.eval(&mut eval_stack)?;
-					match result
+					Operand::Number(n) => eval_stack.push(Operand::Number(n)),
+					Operand::Roll { id, data } =>
 					{
-						Some(Operand::Number(n)) => eval_stack.push(Operand::Number(n)),
-						Some(Operand::Roll(r)) =>
-						{
-							roll_list.push(r.clone());
-							eval_stack.push(Operand::Roll(r));
-						}
-						None => (),
+						roll_list.insert(id, data.clone());
+						eval_stack.push(Operand::Roll { id, data })
 					}
-				}
+				},
 			}
 		}
 		else
@@ -57,7 +52,7 @@ pub fn eval_string(input: &str) -> Result<DiceEvaluation, Error>
 	{
 		Ok(DiceEvaluation {
 			value: operand.value(),
-			rolls: roll_list.into_boxed_slice(),
+			rolls: roll_list.values().cloned().collect(),
 		})
 	}
 	else

@@ -93,7 +93,7 @@ mod tests
 
 		match result
 		{
-			Ok(i) => assert_eq!(i, Some(Operand::Number(7.0))),
+			Ok(i) => assert_eq!(i, Operand::Number(7.0)),
 			Err(_) => panic!(),
 		}
 	}
@@ -119,5 +119,13 @@ mod tests
 			.rolls
 			.iter()
 			.all(|it| it.iter().all(|it| it.value >= 1 && it.value <= 4))));
+
+		let result = evaluation::eval_string("2d6 + 3d6 * 6d6");
+		// assert 3 DiceRolls & all in range [1, 6]. again, very intuitive test code i promise -morgan 2023-09-27
+		assert!(result.is_ok_and(|it| it.rolls.len() == 3
+			&& it
+				.rolls
+				.iter()
+				.all(|it| it.iter().all(|it| it.value >= 1 && it.value <= 6))))
 	}
 }

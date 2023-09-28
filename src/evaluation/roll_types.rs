@@ -1,10 +1,10 @@
-use std::{cell::Cell, cmp::Ordering};
+use std::cmp::Ordering;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct DiceRoll
 {
-	rolls: Box<[Roll]>,
-	faces: u64,
+	pub rolls: Box<[Roll]>,
+	pub faces: u64,
 }
 impl DiceRoll
 {
@@ -43,11 +43,11 @@ impl PartialOrd for DiceRoll
 	}
 }
 
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
 pub struct Roll
 {
 	pub value: u64,
-	pub removed: Cell<bool>,
+	pub removed: bool,
 }
 impl Roll
 {
@@ -55,27 +55,34 @@ impl Roll
 	{
 		Roll {
 			value,
-			removed: Cell::new(false),
+			removed: false,
 		}
 	}
 
 	fn is_removed(&self) -> bool
 	{
-		self.removed.get()
+		self.removed
 	}
 
-	fn remove(&self)
+	fn remove(self) -> Self
 	{
-		self.removed.set(false)
+		Self {
+			removed: true,
+			..self
+		}
 	}
 
-	pub fn remove_unless<F>(&self, predicate: F)
+	pub fn remove_unless<F>(self, predicate: F) -> Self
 	where
-		F: FnOnce(&Self) -> bool,
+		F: FnOnce(Self) -> bool,
 	{
 		if !predicate(self)
 		{
-			self.remove();
+			self.remove()
+		}
+		else
+		{
+			self.clone()
 		}
 	}
 }

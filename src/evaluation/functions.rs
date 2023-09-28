@@ -1,18 +1,16 @@
-use std::rc::Rc;
-
 use crate::evaluation::Roll;
 
 use super::{DiceRoll, Operand};
 use crate::Error;
 use rand::prelude::*;
 
-type EvalResult = Result<Option<Operand>, Error>;
+type EvalResult = Result<Operand, Error>;
 
 pub fn unary_plus(stack: &mut Vec<Operand>) -> EvalResult
 {
 	if let Some(i) = stack.pop()
 	{
-		Ok(Some(Operand::Number(i.value())))
+		Ok(Operand::Number(i.value()))
 	}
 	else
 	{
@@ -27,7 +25,7 @@ pub fn unary_minus(stack: &mut Vec<Operand>) -> EvalResult
 {
 	if let Some(i) = stack.pop()
 	{
-		Ok(Some(-i))
+		Ok(-i)
 	}
 	else
 	{
@@ -84,7 +82,10 @@ pub fn roll(stack: &mut Vec<Operand>) -> EvalResult
 				roll_vec.push(Roll::new(rand::thread_rng().gen_range(0..faces) + 1));
 			}
 
-			Ok(Some(Operand::Roll(Rc::new(DiceRoll::new(faces, roll_vec))))) // oh god so many parens -morgan 2023-09-27
+			Ok(Operand::Roll {
+				id: rand::random(),
+				data: DiceRoll::new(faces, roll_vec),
+			}) // oh god so many parens -morgan 2023-09-27
 		}
 		Err(Reason::Empty) => Err(Error::MissingOperand {
 			expected: 2,
@@ -133,7 +134,7 @@ where
 {
 	match double_pop(stack)
 	{
-		Ok((rhs, lhs)) => Ok(Some(operation(lhs, rhs))),
+		Ok((rhs, lhs)) => Ok(operation(lhs, rhs)),
 		Err(Reason::Empty) => Err(Error::MissingOperand {
 			expected: 2,
 			found: 0,
@@ -149,12 +150,18 @@ fn filter_condition<F>(stack: &mut Vec<Operand>, predicate: F) -> EvalResult
 where
 	F: Fn(&Roll, &Operand) -> bool,
 {
-	if let Ok((rhs, Operand::Roll(lhs))) = double_pop(stack)
+	if let Ok((rhs, Operand::Roll { id, data: rolls })) = double_pop(stack)
 	{
-		lhs.iter()
-			.for_each(|it| it.remove_unless(|it| predicate(it, &rhs)));
-		stack.push(Operand::Roll(lhs));
-		Ok(None)
+		Ok(Operand::Roll {
+			id,
+			data: DiceRoll {
+				rolls: rolls
+					.iter()
+					.map(|it| it.remove_unless(|it| predicate(&it, &rhs)))
+					.collect(),
+				..rolls
+			},
+		})
 	}
 	else
 	{
