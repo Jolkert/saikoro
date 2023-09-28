@@ -74,15 +74,15 @@ impl Roll
 
 	pub fn remove_unless<F>(self, predicate: F) -> Self
 	where
-		F: FnOnce(Self) -> bool,
+		F: FnOnce(&Self) -> bool,
 	{
-		if !predicate(self)
+		if !predicate(&self)
 		{
 			self.remove()
 		}
 		else
 		{
-			self.clone()
+			self
 		}
 	}
 }
