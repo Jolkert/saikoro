@@ -100,9 +100,9 @@ impl Priority
 {
 	pub const ADDITIVE: Priority = Priority(0);
 	pub const MULTIPLICITIVE: Priority = Priority(1);
-	pub const POWER: Priority = Priority(2);
-	pub const DICE: Priority = Priority(3);
-	pub const COMPARISON: Priority = Priority(4);
+	pub const COMPARISON: Priority = Priority(2);
+	pub const POWER: Priority = Priority(3);
+	pub const DICE: Priority = Priority(4);
 }
 impl ops::Add<u32> for Priority
 {

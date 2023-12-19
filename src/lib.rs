@@ -2,9 +2,9 @@
 // would be incredibly stupid of you. im just sick of seeing 30+ warnings when im still not done
 // implementing everything >:( -morgan 20203-09-17
 #![allow(dead_code)]
-mod error;
-mod evaluation;
-mod parsing;
+pub mod error;
+pub mod evaluation;
+pub mod parsing;
 
 pub use error::Error;
 
