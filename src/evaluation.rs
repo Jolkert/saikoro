@@ -22,7 +22,7 @@ pub fn eval_string(input: &str) -> Result<DiceEvaluation, Error>
 {
 	let mut rpn_queue = parsing::rpn_queue_from(input)?;
 	let mut eval_stack = Vec::<Operand>::new();
-	let mut roll_list = HashMap::<u64, DiceRoll>::new();
+	let mut roll_list = HashMap::<RollId, DiceRoll>::new();
 
 	while let Some(current) = rpn_queue.pop_front()
 	{

@@ -2,10 +2,6 @@
 // would be incredibly stupid of you. im just sick of seeing 30+ warnings when im still not done
 // implementing everything >:( -morgan 2023-09-17
 #![allow(dead_code)]
-// TODO: there were a lot of these in the initial lint pass. theyre numerous and require too much
-// thought than im capable of at 2:30am so im leaving them for later, but just know they are a
-// problem and we should probably fix them -morgan 2023-12-19
-#![allow(clippy::cast_sign_loss, clippy::cast_precision_loss, clippy::float_cmp)]
 #![feature(let_chains)]
 
 pub mod error;
@@ -104,16 +100,16 @@ mod tests
 	fn basic_eval_test()
 	{
 		let result = evaluation::eval_string("2+3*5").unwrap();
-		assert_eq!(result.value, 17.0);
+		assert!((result.value - 17.0).abs() < f64::EPSILON);
 
 		let result = evaluation::eval_string("2d6 + 5").unwrap();
 		assert!(result.value >= 7.0 && result.value <= 17.0);
 
 		let result = evaluation::eval_string("2^3^3").unwrap();
-		assert_eq!(result.value, 134_217_728.0);
+		assert!((result.value - 134_217_728.0).abs() < f64::EPSILON);
 
 		let result = evaluation::eval_string("5 - 4 - 2").unwrap();
-		assert_eq!(result.value, -1.0);
+		assert!((result.value - -1.0).abs() < f64::EPSILON);
 
 		let result = evaluation::eval_string("10d4");
 		// 	assert each individual roll in range [1, 4]. not confusing looking at all i promise -morgan 2023-09-27

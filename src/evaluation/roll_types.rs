@@ -4,24 +4,24 @@ use std::cmp::Ordering;
 pub struct DiceRoll
 {
 	pub rolls: Box<[Roll]>,
-	pub faces: u64,
+	pub faces: u32,
 }
 impl DiceRoll
 {
-	pub fn new(faces: u64, rolls: Vec<Roll>) -> Self
+	pub fn new(faces: u32, rolls: Vec<Roll>) -> Self
 	{
 		Self {
 			rolls: rolls.into_boxed_slice(),
 			faces,
 		}
 	}
-	pub fn total(&self) -> u64
+	pub fn total(&self) -> u32
 	{
 		self.rolls
 			.iter()
 			.filter(|it| !it.is_removed())
 			.map(|it| it.value)
-			.sum()
+			.sum::<u32>()
 	}
 	pub fn iter(&self) -> std::slice::Iter<Roll>
 	{
@@ -46,12 +46,12 @@ impl PartialOrd for DiceRoll
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
 pub struct Roll
 {
-	pub value: u64,
+	pub value: u32,
 	pub removed: bool,
 }
 impl Roll
 {
-	pub fn new(value: u64) -> Self
+	pub fn new(value: u32) -> Self
 	{
 		Self {
 			value,
@@ -59,7 +59,7 @@ impl Roll
 		}
 	}
 
-	fn is_removed(&self) -> bool
+	fn is_removed(self) -> bool
 	{
 		self.removed
 	}
@@ -85,5 +85,22 @@ impl Roll
 		{
 			self.remove()
 		}
+	}
+}
+
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Hash)]
+pub struct RollId(u64);
+impl RollId
+{
+	pub fn new() -> Self
+	{
+		Self(rand::random())
+	}
+}
+impl Default for RollId
+{
+	fn default() -> Self
+	{
+		Self::new()
 	}
 }

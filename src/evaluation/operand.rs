@@ -1,6 +1,6 @@
 use std::ops;
 
-use super::DiceRoll;
+use super::{DiceRoll, RollId};
 
 #[derive(Debug, PartialEq, PartialOrd)]
 pub enum Operand
@@ -8,7 +8,7 @@ pub enum Operand
 	Number(f64),
 	Roll
 	{
-		id: u64,
+		id: RollId,
 		data: DiceRoll,
 	},
 }
@@ -19,7 +19,7 @@ impl Operand
 		match self
 		{
 			Self::Number(n) => *n,
-			Self::Roll { data: r, id: _ } => r.total() as f64,
+			Self::Roll { data: r, id: _ } => f64::from(r.total()),
 		}
 	}
 }

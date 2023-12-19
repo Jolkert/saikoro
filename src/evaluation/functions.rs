@@ -1,6 +1,6 @@
 use crate::evaluation::Roll;
 
-use super::{DiceRoll, Operand};
+use super::{DiceRoll, Operand, RollId};
 use crate::Error;
 use rand::prelude::*;
 
@@ -71,15 +71,15 @@ pub fn roll(stack: &mut Vec<Operand>) -> EvalResult
 		Ok((rhs, lhs)) =>
 		{
 			let mut roll_vec = Vec::<Roll>::new();
-			let faces = rhs.value() as u64;
+			let faces = clamp_f64_to_u32(rhs.value());
 
-			for _ in 0..(lhs.value() as u64)
+			for _ in 0..(clamp_f64_to_u32(lhs.value()))
 			{
 				roll_vec.push(Roll::new(rand::thread_rng().gen_range(0..faces) + 1));
 			}
 
 			Ok(Operand::Roll {
-				id: rand::random(),
+				id: RollId::new(),
 				data: DiceRoll::new(faces, roll_vec),
 			}) // oh god so many parens -morgan 2023-09-27
 		}
@@ -96,32 +96,36 @@ pub fn roll(stack: &mut Vec<Operand>) -> EvalResult
 
 pub fn equal(stack: &mut Vec<Operand>) -> EvalResult
 {
-	filter_condition(stack, |lhs, rhs| (lhs.value as f64) == rhs.value())
+	filter_condition(stack, |lhs, rhs| {
+		(f64::from(lhs.value) - rhs.value()).abs() < f64::EPSILON
+	})
 }
 
 pub fn not_equal(stack: &mut Vec<Operand>) -> EvalResult
 {
-	filter_condition(stack, |lhs, rhs| (lhs.value as f64) != rhs.value())
+	filter_condition(stack, |lhs, rhs| {
+		(f64::from(lhs.value) - rhs.value()).abs() > f64::EPSILON
+	})
 }
 
 pub fn greater(stack: &mut Vec<Operand>) -> EvalResult
 {
-	filter_condition(stack, |lhs, rhs| (lhs.value as f64) > rhs.value())
+	filter_condition(stack, |lhs, rhs| (f64::from(lhs.value)) > rhs.value())
 }
 
 pub fn less(stack: &mut Vec<Operand>) -> EvalResult
 {
-	filter_condition(stack, |lhs, rhs| (lhs.value as f64) < rhs.value())
+	filter_condition(stack, |lhs, rhs| (f64::from(lhs.value)) < rhs.value())
 }
 
 pub fn greater_or_equal(stack: &mut Vec<Operand>) -> EvalResult
 {
-	filter_condition(stack, |lhs, rhs| (lhs.value as f64) >= rhs.value())
+	filter_condition(stack, |lhs, rhs| (f64::from(lhs.value)) >= rhs.value())
 }
 
 pub fn less_or_equal(stack: &mut Vec<Operand>) -> EvalResult
 {
-	filter_condition(stack, |lhs, rhs| (lhs.value as f64) <= rhs.value())
+	filter_condition(stack, |lhs, rhs| (f64::from(lhs.value)) <= rhs.value())
 }
 
 fn simple_binary_operation<F>(stack: &mut Vec<Operand>, operation: F) -> EvalResult
@@ -183,6 +187,12 @@ fn double_pop<T>(vec: &mut Vec<T>) -> Result<(T, T), Reason>
 			_ => Reason::One,
 		})
 	}
+}
+
+#[allow(clippy::cast_sign_loss)]
+fn clamp_f64_to_u32(value: f64) -> u32
+{
+	value.clamp(f64::from(u32::MIN), f64::from(u32::MAX)) as u32
 }
 
 enum Reason
