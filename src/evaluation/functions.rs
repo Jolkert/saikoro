@@ -8,32 +8,28 @@ type EvalResult = Result<Operand, Error>;
 
 pub fn unary_plus(stack: &mut Vec<Operand>) -> EvalResult
 {
-	if let Some(i) = stack.pop()
-	{
-		Ok(Operand::Number(i.value()))
-	}
-	else
-	{
-		Err(Error::MissingOperand {
-			expected: 1,
-			found: 0,
-		})
-	}
+	stack.pop().map_or_else(
+		|| {
+			Err(Error::MissingOperand {
+				expected: 1,
+				found: 0,
+			})
+		},
+		|i| Ok(Operand::Number(i.value())),
+	)
 }
 
 pub fn unary_minus(stack: &mut Vec<Operand>) -> EvalResult
 {
-	if let Some(i) = stack.pop()
-	{
-		Ok(-i)
-	}
-	else
-	{
-		Err(Error::MissingOperand {
-			expected: 1,
-			found: 0,
-		})
-	}
+	stack.pop().map_or_else(
+		|| {
+			Err(Error::MissingOperand {
+				expected: 1,
+				found: 0,
+			})
+		},
+		|i| Ok(-i),
+	)
 }
 
 pub fn add(stack: &mut Vec<Operand>) -> EvalResult
@@ -157,7 +153,7 @@ where
 			data: DiceRoll {
 				rolls: rolls
 					.iter()
-					.map(|it| it.remove_unless(|it| predicate(&it, &rhs)))
+					.map(|it| it.remove_unless(|it| predicate(it, &rhs)))
 					.collect(),
 				..rolls
 			},

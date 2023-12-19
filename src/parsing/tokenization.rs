@@ -77,27 +77,17 @@ impl<'a> Iterator for TokenStream<'a>
 				// TODO: make this nicer
 				return match pair.0
 				{
-					TokenType::Number =>
-					{
-						if let Ok(n) = mtch.as_str().parse::<f64>()
-						{
-							Some(Ok(Token::Number(n)))
-						}
-						else
-						{
-							Some(Err(Error::InvalidToken))
-						}
-					}
+					TokenType::Number => Some(
+						mtch.as_str()
+							.parse::<f64>()
+							.map_or_else(|_| Err(Error::InvalidToken), |n| Ok(Token::Number(n))),
+					),
 					TokenType::Operator =>
 					{
-						if let Ok(op) = mtch.as_str().parse::<OperatorToken>()
-						{
-							Some(Ok(Token::Operator(op)))
-						}
-						else
-						{
-							Some(Err(Error::InvalidToken))
-						}
+						Some(mtch.as_str().parse::<OperatorToken>().map_or_else(
+							|_| Err(Error::InvalidToken),
+							|op| Ok(Token::Operator(op)),
+						))
 					}
 					TokenType::Delimiter => Some(Ok(Token::Delimiter {
 						is_open: mtch.as_str() == "(",

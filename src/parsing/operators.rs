@@ -32,7 +32,7 @@ impl Operator
 			| OperatorToken::LessOrEqual => Priority::COMPARISON,
 		};
 
-		Operator {
+		Self {
 			priority,
 			valency,
 			associativity: if matches!(token, OperatorToken::Power)
@@ -47,10 +47,10 @@ impl Operator
 		}
 	}
 
-	pub fn eval_fn(&self) -> Box<dyn Fn(&mut Vec<Operand>) -> Result<Operand, Error>>
+	pub fn eval_fn(&self) -> impl Fn(&mut Vec<Operand>) -> Result<Operand, Error>
 	{
 		use OperatorToken as Token;
-		Box::new(match self.token
+		match self.token
 		{
 			Token::Plus =>
 			{
@@ -85,7 +85,7 @@ impl Operator
 			Token::LessThan => functions::less,
 			Token::GreaterOrEqual => functions::greater_or_equal,
 			Token::LessOrEqual => functions::less_or_equal,
-		})
+		}
 	}
 
 	pub fn eval(&self, stack: &mut Vec<Operand>) -> Result<Operand, Error>
@@ -98,11 +98,11 @@ impl Operator
 pub struct Priority(u32);
 impl Priority
 {
-	pub const ADDITIVE: Priority = Priority(0);
-	pub const MULTIPLICITIVE: Priority = Priority(1);
-	pub const COMPARISON: Priority = Priority(2);
-	pub const POWER: Priority = Priority(3);
-	pub const DICE: Priority = Priority(4);
+	pub const ADDITIVE: Self = Self(0);
+	pub const MULTIPLICITIVE: Self = Self(1);
+	pub const COMPARISON: Self = Self(2);
+	pub const POWER: Self = Self(3);
+	pub const DICE: Self = Self(4);
 }
 impl ops::Add<u32> for Priority
 {
@@ -110,7 +110,7 @@ impl ops::Add<u32> for Priority
 
 	fn add(self, rhs: u32) -> Self::Output
 	{
-		Priority(self.0 + rhs)
+		Self(self.0 + rhs)
 	}
 }
 impl ops::Add<Associativity> for Priority
@@ -118,7 +118,7 @@ impl ops::Add<Associativity> for Priority
 	type Output = Self;
 	fn add(self, rhs: Associativity) -> Self::Output
 	{
-		self + if rhs == Associativity::Right { 1 } else { 0 }
+		self + u32::from(rhs == Associativity::Right)
 	}
 }
 
@@ -184,10 +184,10 @@ impl FromStr for OperatorToken
 			"<" => Ok(Self::LessThan),
 			">=" => Ok(Self::GreaterOrEqual),
 			"<=" => Ok(Self::LessOrEqual),
-			_ => Err(OperatorParseError()),
+			_ => Err(OperatorParseError),
 		}
 	}
 }
 
 #[derive(Debug)]
-pub struct OperatorParseError();
+pub struct OperatorParseError;

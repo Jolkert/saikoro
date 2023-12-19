@@ -1,7 +1,13 @@
 // TODO: please turn this off before you ever consider this even close to finished because that
 // would be incredibly stupid of you. im just sick of seeing 30+ warnings when im still not done
-// implementing everything >:( -morgan 20203-09-17
+// implementing everything >:( -morgan 2023-09-17
 #![allow(dead_code)]
+// TODO: there were a lot of these in the initial lint pass. theyre numerous and require too much
+// thought than im capable of at 2:30am so im leaving them for later, but just know they are a
+// problem and we should probably fix them -morgan 2023-12-19
+#![allow(clippy::cast_sign_loss, clippy::cast_precision_loss, clippy::float_cmp)]
+#![feature(let_chains)]
+
 pub mod error;
 pub mod evaluation;
 pub mod parsing;
@@ -70,11 +76,11 @@ mod tests
 	fn whitespace_test()
 	{
 		let stream_no_whitespace = TokenStream::new("17+9-3")
-			.map(|t| t.unwrap())
+			.map(Result::unwrap)
 			.collect::<Vec<Token>>();
 
 		let stream_whitespace = TokenStream::new("17 + 9 - 3")
-			.map(|t| t.unwrap())
+			.map(Result::unwrap)
 			.collect::<Vec<Token>>();
 
 		assert_eq!(stream_no_whitespace.len(), stream_whitespace.len());
@@ -91,11 +97,7 @@ mod tests
 		let mut item_stack = vec![Operand::Number(2.0), Operand::Number(5.0)];
 		let result = plus.eval(&mut item_stack);
 
-		match result
-		{
-			Ok(i) => assert_eq!(i, Operand::Number(7.0)),
-			Err(_) => panic!(),
-		}
+		assert_eq!(result.ok().unwrap(), Operand::Number(7.0));
 	}
 
 	#[test]
@@ -126,6 +128,6 @@ mod tests
 			&& it
 				.rolls
 				.iter()
-				.all(|it| it.iter().all(|it| it.value >= 1 && it.value <= 6))))
+				.all(|it| it.iter().all(|it| it.value >= 1 && it.value <= 6))));
 	}
 }

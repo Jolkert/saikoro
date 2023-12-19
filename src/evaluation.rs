@@ -24,43 +24,36 @@ pub fn eval_string(input: &str) -> Result<DiceEvaluation, Error>
 	let mut eval_stack = Vec::<Operand>::new();
 	let mut roll_list = HashMap::<u64, DiceRoll>::new();
 
-	loop
+	while let Some(current) = rpn_queue.pop_front()
 	{
-		if let Some(current) = rpn_queue.pop_front()
+		match current
 		{
-			match current
+			Node::Number(n) => eval_stack.push(Operand::Number(n)),
+			Node::Operator(op) => match op.eval(&mut eval_stack)?
 			{
-				Node::Number(n) => eval_stack.push(Operand::Number(n)),
-				Node::Operator(op) => match op.eval(&mut eval_stack)?
+				Operand::Number(n) => eval_stack.push(Operand::Number(n)),
+				Operand::Roll { id, data } =>
 				{
-					Operand::Number(n) => eval_stack.push(Operand::Number(n)),
-					Operand::Roll { id, data } =>
-					{
-						roll_list.insert(id, data.clone());
-						eval_stack.push(Operand::Roll { id, data })
-					}
-				},
-			}
-		}
-		else
-		{
-			break;
+					roll_list.insert(id, data.clone());
+					eval_stack.push(Operand::Roll { id, data });
+				}
+			},
 		}
 	}
 
-	if let Some(operand) = eval_stack.pop()
-	{
-		Ok(DiceEvaluation {
-			value: operand.value(),
-			rolls: roll_list.values().cloned().collect(),
-		})
-	}
-	else
-	{
-		// this needs to change later
-		Err(Error::MissingOperand {
-			expected: 0,
-			found: 0,
-		})
-	}
+	eval_stack.pop().map_or_else(
+		|| {
+			// this needs to change later
+			Err(Error::MissingOperand {
+				expected: 0,
+				found: 0,
+			})
+		},
+		|operand| {
+			Ok(DiceEvaluation {
+				value: operand.value(),
+				rolls: roll_list.values().cloned().collect(),
+			})
+		},
+	)
 }

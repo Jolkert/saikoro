@@ -10,7 +10,7 @@ impl DiceRoll
 {
 	pub fn new(faces: u64, rolls: Vec<Roll>) -> Self
 	{
-		DiceRoll {
+		Self {
 			rolls: rolls.into_boxed_slice(),
 			faces,
 		}
@@ -53,7 +53,7 @@ impl Roll
 {
 	pub fn new(value: u64) -> Self
 	{
-		Roll {
+		Self {
 			value,
 			removed: false,
 		}
@@ -72,17 +72,18 @@ impl Roll
 		}
 	}
 
+	#[must_use]
 	pub fn remove_unless<F>(self, predicate: F) -> Self
 	where
 		F: FnOnce(&Self) -> bool,
 	{
-		if !predicate(&self)
+		if predicate(&self)
 		{
-			self.remove()
+			self
 		}
 		else
 		{
-			self
+			self.remove()
 		}
 	}
 }

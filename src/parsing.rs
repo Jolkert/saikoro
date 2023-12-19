@@ -32,16 +32,16 @@ pub fn rpn_queue_from(string: &str) -> Result<VecDeque<Node>, Error>
 			}
 			Token::Operator(op_token) =>
 			{
-				let operator = Operator::from_token(
-					op_token,
-					match previous
-					{
-						None
-						| Some(Token::Operator(_))
-						| Some(Token::Delimiter { is_open: true }) => Valency::Unary,
-						_ => Valency::Binary,
-					},
-				);
+				let operator =
+					Operator::from_token(
+						op_token,
+						match previous
+						{
+							None
+							| Some(Token::Operator(_) | Token::Delimiter { is_open: true }) => Valency::Unary,
+							_ => Valency::Binary,
+						},
+					);
 
 				push_operator_to_stack(operator, &mut operator_stack, &mut output_queue);
 			}
@@ -49,31 +49,20 @@ pub fn rpn_queue_from(string: &str) -> Result<VecDeque<Node>, Error>
 			{
 				if is_open
 				{
-					match previous
+					if let Some(Token::Number(_) | Token::Delimiter { is_open: true }) = previous
 					{
-						Some(Token::Number(_)) | Some(Token::Delimiter { is_open: true }) =>
-						{
-							push_operator_to_stack(
-								Operator::from_token(OperatorToken::Multiply, Valency::Binary),
-								&mut operator_stack,
-								&mut output_queue,
-							)
-						}
-						_ => (),
+						push_operator_to_stack(
+							Operator::from_token(OperatorToken::Multiply, Valency::Binary),
+							&mut operator_stack,
+							&mut output_queue,
+						);
 					}
 				}
 				else
 				{
-					loop
+					while let Some(OpOrDelim::Operator(op)) = operator_stack.pop()
 					{
-						match operator_stack.pop()
-						{
-							Some(OpOrDelim::Operator(op)) =>
-							{
-								output_queue.push_back(Node::Operator(op))
-							}
-							_ => break,
-						}
+						output_queue.push_back(Node::Operator(op));
 					}
 				}
 			}
@@ -98,24 +87,18 @@ fn push_operator_to_stack(
 {
 	while let Some(last) = operator_stack.last()
 	{
-		match last
+		if let OpOrDelim::Operator(last_op) = last
+			&& last_op.valency <= operator.valency
+			&& last_op.priority >= (operator.priority + operator.associativity)
 		{
-			OpOrDelim::Operator(last_op) =>
+			if let Some(OpOrDelim::Operator(it)) = operator_stack.pop()
 			{
-				if last_op.valency <= operator.valency
-					&& last_op.priority >= (operator.priority + operator.associativity)
-				{
-					if let Some(OpOrDelim::Operator(it)) = operator_stack.pop()
-					{
-						output_queue.push_back(Node::Operator(it));
-					}
-				}
-				else
-				{
-					break;
-				}
+		 		output_queue.push_back(Node::Operator(it));
 			}
-			_ => break,
+		}
+		else
+		{
+			break;
 		}
 	}
 	operator_stack.push(OpOrDelim::Operator(operator));
