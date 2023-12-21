@@ -4,11 +4,12 @@ mod roll_types;
 use std::collections::HashMap;
 
 pub use operand::*;
+use rand::thread_rng;
 pub use roll_types::*;
 
 use crate::{
 	parsing::{self, Node},
-	Error,
+	Error, SaikoroRandom,
 };
 
 #[derive(Debug)]
@@ -20,6 +21,13 @@ pub struct DiceEvaluation
 
 pub fn eval_string(input: &str) -> Result<DiceEvaluation, Error>
 {
+	eval_with_random(input, &mut thread_rng())
+}
+
+pub fn eval_with_random<R>(input: &str, random: &mut R) -> Result<DiceEvaluation, Error>
+where
+	R: SaikoroRandom,
+{
 	let mut rpn_queue = parsing::rpn_queue_from(input)?;
 	let mut eval_stack = Vec::<Operand>::new();
 	let mut roll_list = HashMap::<RollId, DiceRoll>::new();
@@ -29,7 +37,7 @@ pub fn eval_string(input: &str) -> Result<DiceEvaluation, Error>
 		match current
 		{
 			Node::Number(n) => eval_stack.push(Operand::Number(n)),
-			Node::Operator(op) => match op.eval(&mut eval_stack)?
+			Node::Operator(op) => match op.eval(&mut eval_stack, random)?
 			{
 				Operand::Number(n) => eval_stack.push(Operand::Number(n)),
 				Operand::Roll { id, data } =>

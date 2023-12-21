@@ -1,6 +1,6 @@
 use crate::Error;
 
-pub use super::operators::OperatorToken;
+pub use super::operators::OpToken;
 
 use lazy_static::lazy_static;
 use maplit::hashmap;
@@ -20,11 +20,26 @@ lazy_static! {
 pub enum Token
 {
 	Number(f64),
-	Operator(OperatorToken),
+	Operator(OpToken),
 	Delimiter
 	{
 		is_open: bool,
 	},
+}
+
+impl From<f64> for Token
+{
+	fn from(value: f64) -> Self
+	{
+		Self::Number(value)
+	}
+}
+impl From<OpToken> for Token
+{
+	fn from(value: OpToken) -> Self
+	{
+		Self::Operator(value)
+	}
 }
 
 #[derive(PartialEq, Eq, Hash)]
@@ -84,7 +99,7 @@ impl<'a> Iterator for TokenStream<'a>
 					),
 					TokenType::Operator =>
 					{
-						Some(mtch.as_str().parse::<OperatorToken>().map_or_else(
+						Some(mtch.as_str().parse::<OpToken>().map_or_else(
 							|_| Err(Error::InvalidToken),
 							|op| Ok(Token::Operator(op)),
 						))

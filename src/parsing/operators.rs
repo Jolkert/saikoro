@@ -1,7 +1,9 @@
 use std::{ops, str::FromStr};
 
-use crate::evaluation::{functions, Operand};
-use crate::Error;
+use crate::{
+	evaluation::{functions, Operand},
+	Error, SaikoroRandom,
+};
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct Operator
@@ -9,33 +11,30 @@ pub struct Operator
 	pub priority: Priority,
 	pub valency: Valency,
 	pub associativity: Associativity,
-	pub token: OperatorToken,
+	pub token: OpToken,
 }
 impl Operator
 {
-	pub fn from_token(token: OperatorToken, valency: Valency) -> Self
+	pub fn from_token(token: OpToken, valency: Valency) -> Self
 	{
 		let priority = match token
 		{
-			OperatorToken::Plus | OperatorToken::Minus => Priority::ADDITIVE,
-			OperatorToken::Multiply | OperatorToken::Divide | OperatorToken::Modulus =>
-			{
-				Priority::MULTIPLICITIVE
-			}
-			OperatorToken::Power => Priority::POWER,
-			OperatorToken::Dice => Priority::DICE,
-			OperatorToken::Equals
-			| OperatorToken::NotEquals
-			| OperatorToken::GreaterThan
-			| OperatorToken::LessThan
-			| OperatorToken::GreaterOrEqual
-			| OperatorToken::LessOrEqual => Priority::COMPARISON,
+			OpToken::Plus | OpToken::Minus => Priority::ADDITIVE,
+			OpToken::Multiply | OpToken::Divide | OpToken::Modulus => Priority::MULTIPLICITIVE,
+			OpToken::Power => Priority::POWER,
+			OpToken::Dice => Priority::DICE,
+			OpToken::Equals
+			| OpToken::NotEquals
+			| OpToken::GreaterThan
+			| OpToken::LessThan
+			| OpToken::GreaterOrEqual
+			| OpToken::LessOrEqual => Priority::COMPARISON,
 		};
 
 		Self {
 			priority,
 			valency,
-			associativity: if matches!(token, OperatorToken::Power)
+			associativity: if matches!(token, OpToken::Power)
 			{
 				Associativity::Right
 			}
@@ -47,9 +46,11 @@ impl Operator
 		}
 	}
 
-	pub fn eval_fn(&self) -> impl Fn(&mut Vec<Operand>) -> Result<Operand, Error>
+	pub fn eval_fn<R>(&self) -> impl Fn(&mut Vec<Operand>, &mut R) -> Result<Operand, Error>
+	where
+		R: SaikoroRandom,
 	{
-		use OperatorToken as Token;
+		use OpToken as Token;
 		match self.token
 		{
 			Token::Plus =>
@@ -88,9 +89,18 @@ impl Operator
 		}
 	}
 
-	pub fn eval(&self, stack: &mut Vec<Operand>) -> Result<Operand, Error>
+	pub fn eval<R>(&self, stack: &mut Vec<Operand>, random: &mut R) -> Result<Operand, Error>
+	where
+		R: SaikoroRandom,
 	{
-		self.eval_fn()(stack)
+		self.eval_fn()(stack, random)
+	}
+}
+impl From<(OpToken, Valency)> for Operator
+{
+	fn from(value: (OpToken, Valency)) -> Self
+	{
+		Self::from_token(value.0, value.1)
 	}
 }
 
@@ -146,7 +156,7 @@ pub enum OpOrDelim
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
-pub enum OperatorToken
+pub enum OpToken
 {
 	Plus,
 	Minus,
@@ -163,7 +173,7 @@ pub enum OperatorToken
 	LessOrEqual,
 }
 
-impl FromStr for OperatorToken
+impl FromStr for OpToken
 {
 	type Err = OperatorParseError;
 

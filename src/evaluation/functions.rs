@@ -1,12 +1,11 @@
-use crate::evaluation::Roll;
-
 use super::{DiceRoll, Operand, RollId};
-use crate::Error;
-use rand::prelude::*;
+use crate::{evaluation::Roll, Error, SaikoroRandom};
 
 type EvalResult = Result<Operand, Error>;
 
-pub fn unary_plus(stack: &mut Vec<Operand>) -> EvalResult
+pub fn unary_plus<R>(stack: &mut Vec<Operand>, _random: &mut R) -> EvalResult
+where
+	R: SaikoroRandom,
 {
 	stack.pop().map_or_else(
 		|| {
@@ -19,7 +18,9 @@ pub fn unary_plus(stack: &mut Vec<Operand>) -> EvalResult
 	)
 }
 
-pub fn unary_minus(stack: &mut Vec<Operand>) -> EvalResult
+pub fn unary_minus<R>(stack: &mut Vec<Operand>, _random: &mut R) -> EvalResult
+where
+	R: SaikoroRandom,
 {
 	stack.pop().map_or_else(
 		|| {
@@ -32,39 +33,53 @@ pub fn unary_minus(stack: &mut Vec<Operand>) -> EvalResult
 	)
 }
 
-pub fn add(stack: &mut Vec<Operand>) -> EvalResult
+pub fn add<R>(stack: &mut Vec<Operand>, _random: &mut R) -> EvalResult
+where
+	R: SaikoroRandom,
 {
 	simple_binary_operation(stack, |lhs, rhs| lhs + rhs)
 }
 
-pub fn subtract(stack: &mut Vec<Operand>) -> EvalResult
+pub fn subtract<R>(stack: &mut Vec<Operand>, _random: &mut R) -> EvalResult
+where
+	R: SaikoroRandom,
 {
 	simple_binary_operation(stack, |lhs, rhs| lhs - rhs)
 }
 
-pub fn multiply(stack: &mut Vec<Operand>) -> EvalResult
+pub fn multiply<R>(stack: &mut Vec<Operand>, _random: &mut R) -> EvalResult
+where
+	R: SaikoroRandom,
 {
 	simple_binary_operation(stack, |lhs, rhs| lhs * rhs)
 }
 
-pub fn divide(stack: &mut Vec<Operand>) -> EvalResult
+pub fn divide<R>(stack: &mut Vec<Operand>, _random: &mut R) -> EvalResult
+where
+	R: SaikoroRandom,
 {
 	simple_binary_operation(stack, |lhs, rhs| lhs * rhs)
 }
 
-pub fn modulo(stack: &mut Vec<Operand>) -> EvalResult
+pub fn modulo<R>(stack: &mut Vec<Operand>, _random: &mut R) -> EvalResult
+where
+	R: SaikoroRandom,
 {
 	simple_binary_operation(stack, |lhs, rhs| lhs % rhs)
 }
 
-pub fn pow(stack: &mut Vec<Operand>) -> EvalResult
+pub fn pow<R>(stack: &mut Vec<Operand>, _random: &mut R) -> EvalResult
+where
+	R: SaikoroRandom,
 {
 	simple_binary_operation(stack, |lhs, rhs| {
 		Operand::Number(lhs.value().powf(rhs.value()))
 	})
 }
 
-pub fn roll(stack: &mut Vec<Operand>) -> EvalResult
+pub fn roll<R>(stack: &mut Vec<Operand>, random: &mut R) -> EvalResult
+where
+	R: SaikoroRandom,
 {
 	match double_pop(stack)
 	{
@@ -75,13 +90,13 @@ pub fn roll(stack: &mut Vec<Operand>) -> EvalResult
 
 			for _ in 0..(clamp_f64_to_u32(lhs.value()))
 			{
-				roll_vec.push(Roll::new(rand::thread_rng().gen_range(0..faces) + 1));
+				roll_vec.push(Roll::new(random.rng_range(0..faces) + 1));
 			}
 
 			Ok(Operand::Roll {
 				id: RollId::new(),
 				data: DiceRoll::new(faces, roll_vec),
-			}) // oh god so many parens -morgan 2023-09-27
+			})
 		}
 		Err(Reason::Empty) => Err(Error::MissingOperand {
 			expected: 2,
@@ -94,38 +109,58 @@ pub fn roll(stack: &mut Vec<Operand>) -> EvalResult
 	}
 }
 
-pub fn equal(stack: &mut Vec<Operand>) -> EvalResult
+pub fn equal<R>(stack: &mut Vec<Operand>, _random: &mut R) -> EvalResult
+where
+	R: SaikoroRandom,
 {
 	filter_condition(stack, |lhs, rhs| {
-		(f64::from(lhs.value) - rhs.value()).abs() < f64::EPSILON
+		(f64::from(lhs.original_value) - rhs.value()).abs() < f64::EPSILON
 	})
 }
 
-pub fn not_equal(stack: &mut Vec<Operand>) -> EvalResult
+pub fn not_equal<R>(stack: &mut Vec<Operand>, _random: &mut R) -> EvalResult
+where
+	R: SaikoroRandom,
 {
 	filter_condition(stack, |lhs, rhs| {
-		(f64::from(lhs.value) - rhs.value()).abs() > f64::EPSILON
+		(f64::from(lhs.original_value) - rhs.value()).abs() > f64::EPSILON
 	})
 }
 
-pub fn greater(stack: &mut Vec<Operand>) -> EvalResult
+pub fn greater<R>(stack: &mut Vec<Operand>, _random: &mut R) -> EvalResult
+where
+	R: SaikoroRandom,
 {
-	filter_condition(stack, |lhs, rhs| (f64::from(lhs.value)) > rhs.value())
+	filter_condition(stack, |lhs, rhs| {
+		(f64::from(lhs.original_value)) > rhs.value()
+	})
 }
 
-pub fn less(stack: &mut Vec<Operand>) -> EvalResult
+pub fn less<R>(stack: &mut Vec<Operand>, _random: &mut R) -> EvalResult
+where
+	R: SaikoroRandom,
 {
-	filter_condition(stack, |lhs, rhs| (f64::from(lhs.value)) < rhs.value())
+	filter_condition(stack, |lhs, rhs| {
+		(f64::from(lhs.original_value)) < rhs.value()
+	})
 }
 
-pub fn greater_or_equal(stack: &mut Vec<Operand>) -> EvalResult
+pub fn greater_or_equal<R>(stack: &mut Vec<Operand>, _random: &mut R) -> EvalResult
+where
+	R: SaikoroRandom,
 {
-	filter_condition(stack, |lhs, rhs| (f64::from(lhs.value)) >= rhs.value())
+	filter_condition(stack, |lhs, rhs| {
+		(f64::from(lhs.original_value)) >= rhs.value()
+	})
 }
 
-pub fn less_or_equal(stack: &mut Vec<Operand>) -> EvalResult
+pub fn less_or_equal<R>(stack: &mut Vec<Operand>, _random: &mut R) -> EvalResult
+where
+	R: SaikoroRandom,
 {
-	filter_condition(stack, |lhs, rhs| (f64::from(lhs.value)) <= rhs.value())
+	filter_condition(stack, |lhs, rhs| {
+		(f64::from(lhs.original_value)) <= rhs.value()
+	})
 }
 
 fn simple_binary_operation<F>(stack: &mut Vec<Operand>, operation: F) -> EvalResult

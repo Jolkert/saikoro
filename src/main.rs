@@ -6,7 +6,8 @@ fn main()
 		println!("Enter string to parse:");
 		let input = read_line();
 
-		let result = evaluation::eval_string(&input).expect("could not parse input!");
+		let result = evaluation::eval_with_random(&input, &mut rand::thread_rng())
+			.expect("could not parse input!");
 		println!(
 			"Result: {} {:?}",
 			result.value,
@@ -15,8 +16,8 @@ fn main()
 				.iter()
 				.flat_map(|it| it.rolls.iter().map(|r| format!(
 					"{}{}",
-					r.value,
-					if r.removed { "*" } else { "" }
+					r.original_value,
+					r.is_removed().then_some("*").unwrap_or_default()
 				)))
 				.collect::<Vec<String>>(),
 		);

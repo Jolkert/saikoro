@@ -13,6 +13,20 @@ pub enum Node
 	Number(f64),
 	Operator(Operator),
 }
+impl From<f64> for Node
+{
+	fn from(value: f64) -> Self
+	{
+		Self::Number(value)
+	}
+}
+impl From<Operator> for Node
+{
+	fn from(value: Operator) -> Self
+	{
+		Self::Operator(value)
+	}
+}
 
 pub fn rpn_queue_from(string: &str) -> Result<VecDeque<Node>, Error>
 {
@@ -52,7 +66,7 @@ pub fn rpn_queue_from(string: &str) -> Result<VecDeque<Node>, Error>
 					if let Some(Token::Number(_) | Token::Delimiter { is_open: true }) = previous
 					{
 						push_operator_to_stack(
-							Operator::from_token(OperatorToken::Multiply, Valency::Binary),
+							Operator::from_token(OpToken::Multiply, Valency::Binary),
 							&mut operator_stack,
 							&mut output_queue,
 						);

@@ -20,7 +20,7 @@ impl DiceRoll
 		self.rolls
 			.iter()
 			.filter(|it| !it.is_removed())
-			.map(|it| it.value)
+			.map(|it| it.original_value)
 			.sum::<u32>()
 	}
 	pub fn iter(&self) -> std::slice::Iter<Roll>
@@ -46,25 +46,31 @@ impl PartialOrd for DiceRoll
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
 pub struct Roll
 {
-	pub value: u32,
-	pub removed: bool,
+	pub original_value: u32,
+	removed: bool,
 }
 impl Roll
 {
 	pub fn new(value: u32) -> Self
 	{
 		Self {
-			value,
+			original_value: value,
 			removed: false,
 		}
 	}
 
-	fn is_removed(self) -> bool
+	pub fn value(&self) -> Option<u32>
+	{
+		(!self.removed).then_some(self.original_value)
+	}
+
+	pub fn is_removed(&self) -> bool
 	{
 		self.removed
 	}
 
-	fn remove(self) -> Self
+	#[must_use]
+	pub fn remove(self) -> Self
 	{
 		Self {
 			removed: true,
