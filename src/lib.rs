@@ -11,25 +11,14 @@ pub mod parsing;
 use std::ops::Range;
 
 pub use error::Error;
-use rand::{
-	rngs::{StdRng, ThreadRng},
-	Rng,
-};
+use rand::{Rng, RngCore};
 
 pub trait SaikoroRandom
 {
 	fn rng_range(&mut self, range: Range<u32>) -> u32;
 }
 
-impl SaikoroRandom for ThreadRng
-{
-	fn rng_range(&mut self, range: Range<u32>) -> u32
-	{
-		self.gen_range(range)
-	}
-}
-
-impl SaikoroRandom for StdRng
+impl<T: RngCore> SaikoroRandom for T
 {
 	fn rng_range(&mut self, range: Range<u32>) -> u32
 	{

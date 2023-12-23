@@ -107,7 +107,7 @@ fn push_operator_to_stack(
 		{
 			if let Some(OpOrDelim::Operator(it)) = operator_stack.pop()
 			{
-		 		output_queue.push_back(Node::Operator(it));
+				output_queue.push_back(Node::Operator(it));
 			}
 		}
 		else
