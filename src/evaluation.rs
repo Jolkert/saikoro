@@ -4,14 +4,14 @@ mod roll_types;
 use std::collections::HashMap;
 
 pub use operand::*;
-use rand::thread_rng;
 pub use roll_types::*;
-use thiserror::Error;
 
 use crate::{
 	parsing::{self, tokenization::TokenizationError, Node},
 	RangeRng,
 };
+use rand::thread_rng;
+use thiserror::Error;
 
 use self::functions::MissingOperandError;
 

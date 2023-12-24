@@ -1,6 +1,5 @@
-use std::ops;
-
 use super::{DiceRoll, RollId};
+use std::ops;
 
 #[derive(Debug, PartialEq, PartialOrd)]
 pub enum Operand
