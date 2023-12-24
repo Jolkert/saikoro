@@ -1,11 +1,14 @@
-use std::{ops, str::FromStr};
-
 use crate::{
-	evaluation::{functions, Operand},
-	Error, SaikoroRandom,
+	evaluation::{
+		functions::{self, MissingOperandError},
+		Operand,
+	},
+	RangeRng,
 };
+use std::{fmt::Display, ops, str::FromStr};
+use thiserror::Error;
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Operator
 {
 	pub priority: Priority,
@@ -46,9 +49,11 @@ impl Operator
 		}
 	}
 
-	pub fn eval_fn<R>(&self) -> impl Fn(&mut Vec<Operand>, &mut R) -> Result<Operand, Error>
+	pub fn eval_fn<R>(
+		&self,
+	) -> impl Fn(&mut Vec<Operand>, &mut R) -> Result<Operand, MissingOperandError>
 	where
-		R: SaikoroRandom,
+		R: RangeRng,
 	{
 		use OpToken as Token;
 		match self.token
@@ -89,9 +94,13 @@ impl Operator
 		}
 	}
 
-	pub fn eval<R>(&self, stack: &mut Vec<Operand>, random: &mut R) -> Result<Operand, Error>
+	pub fn eval<R>(
+		&self,
+		stack: &mut Vec<Operand>,
+		random: &mut R,
+	) -> Result<Operand, MissingOperandError>
 	where
-		R: SaikoroRandom,
+		R: RangeRng,
 	{
 		self.eval_fn()(stack, random)
 	}
@@ -132,7 +141,7 @@ impl ops::Add<Associativity> for Priority
 	}
 }
 
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
 pub enum Valency
 {
 	Unary = 1,
@@ -172,10 +181,9 @@ pub enum OpToken
 	GreaterOrEqual,
 	LessOrEqual,
 }
-
 impl FromStr for OpToken
 {
-	type Err = OperatorParseError;
+	type Err = ParseOperatorError;
 
 	fn from_str(str: &str) -> Result<Self, Self::Err>
 	{
@@ -194,10 +202,50 @@ impl FromStr for OpToken
 			"<" => Ok(Self::LessThan),
 			">=" => Ok(Self::GreaterOrEqual),
 			"<=" => Ok(Self::LessOrEqual),
-			_ => Err(OperatorParseError),
+			other => Err(ParseOperatorError::from(other)),
 		}
 	}
 }
+impl Display for OpToken
+{
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result
+	{
+		write!(
+			f,
+			"{}",
+			match self
+			{
+				Self::Plus => "+",
+				Self::Minus => "-",
+				Self::Multiply => "*",
+				Self::Divide => "/",
+				Self::Modulus => "%",
+				Self::Power => "^",
+				Self::Dice => "d",
+				Self::Equals => "==",
+				Self::NotEquals => "!=",
+				Self::GreaterThan => ">",
+				Self::LessThan => "<",
+				Self::GreaterOrEqual => ">=",
+				Self::LessOrEqual => "<=",
+			}
+		)
+	}
+}
 
-#[derive(Debug)]
-pub struct OperatorParseError;
+#[derive(Debug, Error)]
+#[error("Unrecognized operator: {}", .operator)]
+pub struct ParseOperatorError
+{
+	operator: Box<str>,
+}
+
+impl From<&str> for ParseOperatorError
+{
+	fn from(value: &str) -> Self
+	{
+		Self {
+			operator: value.to_owned().into_boxed_str(),
+		}
+	}
+}

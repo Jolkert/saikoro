@@ -4,21 +4,18 @@
 #![allow(dead_code)]
 #![feature(let_chains)]
 
-pub mod error;
 pub mod evaluation;
 pub mod parsing;
 
+use rand::{Rng, RngCore};
 use std::ops::Range;
 
-pub use error::Error;
-use rand::{Rng, RngCore};
-
-pub trait SaikoroRandom
+pub trait RangeRng
 {
 	fn rng_range(&mut self, range: Range<u32>) -> u32;
 }
 
-impl<T: RngCore> SaikoroRandom for T
+impl<T: RngCore> RangeRng for T
 {
 	fn rng_range(&mut self, range: Range<u32>) -> u32
 	{
@@ -32,7 +29,7 @@ mod tests
 	use crate::evaluation::{self, Operand, Roll};
 	use crate::parsing::tokenization::{OpToken, Token, TokenStream};
 	use crate::parsing::{self, Node, Operator, Valency};
-	use crate::SaikoroRandom;
+	use crate::RangeRng;
 	use std::collections::VecDeque;
 
 	#[test]
@@ -221,7 +218,7 @@ mod tests
 			self.roll_queue.pop_front().expect("roll queue empty!")
 		}
 	}
-	impl SaikoroRandom for RiggedRandom
+	impl RangeRng for RiggedRandom
 	{
 		fn rng_range(&mut self, range: std::ops::Range<u32>) -> u32
 		{

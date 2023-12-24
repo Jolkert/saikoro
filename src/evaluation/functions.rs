@@ -1,15 +1,16 @@
 use super::{DiceRoll, Operand, RollId};
-use crate::{evaluation::Roll, Error, SaikoroRandom};
+use crate::{evaluation::Roll, RangeRng};
+use thiserror::Error;
 
-type EvalResult = Result<Operand, Error>;
+type EvalResult = Result<Operand, MissingOperandError>;
 
 pub fn unary_plus<R>(stack: &mut Vec<Operand>, _random: &mut R) -> EvalResult
 where
-	R: SaikoroRandom,
+	R: RangeRng,
 {
 	stack.pop().map_or_else(
 		|| {
-			Err(Error::MissingOperand {
+			Err(MissingOperandError {
 				expected: 1,
 				found: 0,
 			})
@@ -20,11 +21,11 @@ where
 
 pub fn unary_minus<R>(stack: &mut Vec<Operand>, _random: &mut R) -> EvalResult
 where
-	R: SaikoroRandom,
+	R: RangeRng,
 {
 	stack.pop().map_or_else(
 		|| {
-			Err(Error::MissingOperand {
+			Err(MissingOperandError {
 				expected: 1,
 				found: 0,
 			})
@@ -35,42 +36,42 @@ where
 
 pub fn add<R>(stack: &mut Vec<Operand>, _random: &mut R) -> EvalResult
 where
-	R: SaikoroRandom,
+	R: RangeRng,
 {
 	simple_binary_operation(stack, |lhs, rhs| lhs + rhs)
 }
 
 pub fn subtract<R>(stack: &mut Vec<Operand>, _random: &mut R) -> EvalResult
 where
-	R: SaikoroRandom,
+	R: RangeRng,
 {
 	simple_binary_operation(stack, |lhs, rhs| lhs - rhs)
 }
 
 pub fn multiply<R>(stack: &mut Vec<Operand>, _random: &mut R) -> EvalResult
 where
-	R: SaikoroRandom,
+	R: RangeRng,
 {
 	simple_binary_operation(stack, |lhs, rhs| lhs * rhs)
 }
 
 pub fn divide<R>(stack: &mut Vec<Operand>, _random: &mut R) -> EvalResult
 where
-	R: SaikoroRandom,
+	R: RangeRng,
 {
 	simple_binary_operation(stack, |lhs, rhs| lhs * rhs)
 }
 
 pub fn modulo<R>(stack: &mut Vec<Operand>, _random: &mut R) -> EvalResult
 where
-	R: SaikoroRandom,
+	R: RangeRng,
 {
 	simple_binary_operation(stack, |lhs, rhs| lhs % rhs)
 }
 
 pub fn pow<R>(stack: &mut Vec<Operand>, _random: &mut R) -> EvalResult
 where
-	R: SaikoroRandom,
+	R: RangeRng,
 {
 	simple_binary_operation(stack, |lhs, rhs| {
 		Operand::Number(lhs.value().powf(rhs.value()))
@@ -79,7 +80,7 @@ where
 
 pub fn roll<R>(stack: &mut Vec<Operand>, random: &mut R) -> EvalResult
 where
-	R: SaikoroRandom,
+	R: RangeRng,
 {
 	match double_pop(stack)
 	{
@@ -98,11 +99,11 @@ where
 				data: DiceRoll::new(faces, roll_vec),
 			})
 		}
-		Err(Reason::Empty) => Err(Error::MissingOperand {
+		Err(Reason::Empty) => Err(MissingOperandError {
 			expected: 2,
 			found: 0,
 		}),
-		Err(Reason::One) => Err(Error::MissingOperand {
+		Err(Reason::One) => Err(MissingOperandError {
 			expected: 2,
 			found: 1,
 		}),
@@ -111,7 +112,7 @@ where
 
 pub fn equal<R>(stack: &mut Vec<Operand>, _random: &mut R) -> EvalResult
 where
-	R: SaikoroRandom,
+	R: RangeRng,
 {
 	filter_condition(stack, |lhs, rhs| {
 		(f64::from(lhs.original_value) - rhs.value()).abs() < f64::EPSILON
@@ -120,7 +121,7 @@ where
 
 pub fn not_equal<R>(stack: &mut Vec<Operand>, _random: &mut R) -> EvalResult
 where
-	R: SaikoroRandom,
+	R: RangeRng,
 {
 	filter_condition(stack, |lhs, rhs| {
 		(f64::from(lhs.original_value) - rhs.value()).abs() > f64::EPSILON
@@ -129,7 +130,7 @@ where
 
 pub fn greater<R>(stack: &mut Vec<Operand>, _random: &mut R) -> EvalResult
 where
-	R: SaikoroRandom,
+	R: RangeRng,
 {
 	filter_condition(stack, |lhs, rhs| {
 		(f64::from(lhs.original_value)) > rhs.value()
@@ -138,7 +139,7 @@ where
 
 pub fn less<R>(stack: &mut Vec<Operand>, _random: &mut R) -> EvalResult
 where
-	R: SaikoroRandom,
+	R: RangeRng,
 {
 	filter_condition(stack, |lhs, rhs| {
 		(f64::from(lhs.original_value)) < rhs.value()
@@ -147,7 +148,7 @@ where
 
 pub fn greater_or_equal<R>(stack: &mut Vec<Operand>, _random: &mut R) -> EvalResult
 where
-	R: SaikoroRandom,
+	R: RangeRng,
 {
 	filter_condition(stack, |lhs, rhs| {
 		(f64::from(lhs.original_value)) >= rhs.value()
@@ -156,7 +157,7 @@ where
 
 pub fn less_or_equal<R>(stack: &mut Vec<Operand>, _random: &mut R) -> EvalResult
 where
-	R: SaikoroRandom,
+	R: RangeRng,
 {
 	filter_condition(stack, |lhs, rhs| {
 		(f64::from(lhs.original_value)) <= rhs.value()
@@ -170,11 +171,11 @@ where
 	match double_pop(stack)
 	{
 		Ok((rhs, lhs)) => Ok(operation(lhs, rhs)),
-		Err(Reason::Empty) => Err(Error::MissingOperand {
+		Err(Reason::Empty) => Err(MissingOperandError {
 			expected: 2,
 			found: 0,
 		}),
-		Err(Reason::One) => Err(Error::MissingOperand {
+		Err(Reason::One) => Err(MissingOperandError {
 			expected: 2,
 			found: 1,
 		}),
@@ -200,7 +201,7 @@ where
 	}
 	else
 	{
-		Err(Error::MissingOperand {
+		Err(MissingOperandError {
 			expected: 2,
 			found: 0,
 		})
@@ -221,6 +222,21 @@ fn double_pop<T>(vec: &mut Vec<T>) -> Result<(T, T), Reason>
 			(None, None) => Reason::Empty,
 			_ => Reason::One,
 		})
+	}
+}
+
+#[derive(Debug, Error)]
+#[error("expected {} operands; found {}", .expected, .found)]
+pub struct MissingOperandError
+{
+	pub expected: u8,
+	pub found: u8,
+}
+impl MissingOperandError
+{
+	pub fn new(expected: u8, found: u8) -> Self
+	{
+		Self { expected, found }
 	}
 }
 

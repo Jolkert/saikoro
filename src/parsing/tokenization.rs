@@ -1,11 +1,11 @@
-use crate::Error;
-
 pub use super::operators::OpToken;
 
+use super::ParseOperatorError;
 use lazy_static::lazy_static;
 use maplit::hashmap;
 use regex::Regex;
-use std::collections::HashMap;
+use std::{collections::HashMap, num::ParseFloatError};
+use thiserror::Error;
 
 lazy_static! {
 	static ref REGEX_MAP: HashMap<TokenType, Regex> = hashmap! {
@@ -70,7 +70,7 @@ impl<'a> TokenStream<'a>
 }
 impl<'a> Iterator for TokenStream<'a>
 {
-	type Item = Result<Token, Error>;
+	type Item = Result<Token, TokenizationError>;
 	fn next(&mut self) -> Option<Self::Item>
 	{
 		if self.current_index >= self.string.len()
@@ -88,22 +88,18 @@ impl<'a> Iterator for TokenStream<'a>
 				}
 
 				self.current_index += mtch.as_str().len();
-
-				// TODO: make this nicer
 				return match pair.0
 				{
 					TokenType::Number => Some(
 						mtch.as_str()
 							.parse::<f64>()
-							.map_or_else(|_| Err(Error::InvalidToken), |n| Ok(Token::Number(n))),
+							.map_or_else(|e| Err(e.into()), |n| Ok(Token::Number(n))),
 					),
-					TokenType::Operator =>
-					{
-						Some(mtch.as_str().parse::<OpToken>().map_or_else(
-							|_| Err(Error::InvalidToken),
-							|op| Ok(Token::Operator(op)),
-						))
-					}
+					TokenType::Operator => Some(
+						mtch.as_str()
+							.parse::<OpToken>()
+							.map_or_else(|e| Err(e.into()), |op| Ok(Token::Operator(op))),
+					),
 					TokenType::Delimiter => Some(Ok(Token::Delimiter {
 						is_open: mtch.as_str() == "(",
 					})),
@@ -114,4 +110,23 @@ impl<'a> Iterator for TokenStream<'a>
 
 		None
 	}
+}
+
+#[derive(Debug, Error)]
+pub enum TokenizationError
+{
+	#[error("{}", .0)]
+	UnknownToken(#[from] UnknownTokenError),
+	#[error("{}", .0)]
+	InvalidNumber(#[from] ParseFloatError),
+	#[error("{}", .0)]
+	InvalidOperator(#[from] ParseOperatorError),
+}
+
+#[derive(Debug, Error)]
+#[error("Found unknown token: '{}' at index {}", .unknown_char, .index)]
+pub struct UnknownTokenError
+{
+	pub unknown_char: char,
+	pub index: usize,
 }
