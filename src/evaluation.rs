@@ -1,7 +1,6 @@
 pub mod functions;
 mod operand;
 mod roll_types;
-use std::collections::HashMap;
 
 pub use operand::*;
 pub use roll_types::*;
@@ -10,19 +9,42 @@ use crate::{
 	parsing::{self, tokenization::TokenizationError, Node},
 	RangeRng,
 };
+use functions::MissingOperandError;
 use rand::thread_rng;
+use std::{collections::HashMap, fmt::Display};
 use thiserror::Error;
-
-use self::functions::MissingOperandError;
 
 #[derive(Debug)]
 pub struct DiceEvaluation
 {
 	pub value: f64,
-	pub rolls: Box<[DiceRoll]>, // this really isnt necessary
+	pub roll_groups: Box<[RollGroup]>,
+}
+impl DiceEvaluation
+{
+	pub fn ungrouped_rolls(&self) -> impl Iterator<Item = &Roll>
+	{
+		self.roll_groups.iter().flat_map(RollGroup::iter)
+	}
+}
+impl Display for DiceEvaluation
+{
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result
+	{
+		write!(
+			f,
+			"Total: {} [{}]",
+			self.value,
+			self.roll_groups
+				.iter()
+				.map(ToString::to_string)
+				.collect::<Vec<_>>()
+				.join(", ")
+		)
+	}
 }
 
-pub fn eval_string(input: &str) -> Result<DiceEvaluation, EvaluationError>
+pub fn evaluate(input: &str) -> Result<DiceEvaluation, EvaluationError>
 {
 	eval_with_random(input, &mut thread_rng())
 }
@@ -33,7 +55,7 @@ where
 {
 	let mut rpn_queue = parsing::rpn_queue_from(input)?;
 	let mut eval_stack = Vec::<Operand>::new();
-	let mut roll_list = HashMap::<RollId, DiceRoll>::new();
+	let mut roll_list = HashMap::<RollId, RollGroup>::new();
 
 	while let Some(current) = rpn_queue.pop_front()
 	{
@@ -63,7 +85,7 @@ where
 		|operand| {
 			Ok(DiceEvaluation {
 				value: operand.value(),
-				rolls: roll_list.values().cloned().collect(),
+				roll_groups: roll_list.values().cloned().collect(),
 			})
 		},
 	)

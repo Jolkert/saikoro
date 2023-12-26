@@ -1,7 +1,3 @@
-// TODO: please turn this off before you ever consider this even close to finished because that
-// would be incredibly stupid of you. im just sick of seeing 30+ warnings when im still not done
-// implementing everything >:( -morgan 2023-09-17
-#![allow(dead_code)]
 #![feature(let_chains)]
 
 pub mod evaluation;
@@ -26,7 +22,7 @@ impl<T: RngCore> RangeRng for T
 #[cfg(test)]
 mod tests
 {
-	use crate::evaluation::{self, Operand, Roll};
+	use crate::evaluation::{self, DiceEvaluation, Operand, Roll};
 	use crate::parsing::tokenization::{OpToken, Token, TokenStream};
 	use crate::parsing::{self, Node, Operator, Valency};
 	use crate::RangeRng;
@@ -104,46 +100,32 @@ mod tests
 	#[test]
 	fn basic_eval_test()
 	{
-		let result = evaluation::eval_string("2+3*5").unwrap();
-		assert!(result.value.approx_eq(17.0));
+		assert!(eval_unwrap("2+3*5").value.approx_eq(17.0));
 
-		let result =
-			evaluation::eval_with_random("2d6 + 5", &mut RiggedRandom::new([4, 2])).unwrap();
-		assert!(result.value.approx_eq(11.0));
+		assert!(eval_unwrap("(2+3)*5").value.approx_eq(25.0));
 
-		let result = evaluation::eval_string("2^3^3").unwrap();
-		assert!(result.value.approx_eq(134_217_728.0));
+		assert!(eval_unwrap_with("2d6 + 5", &mut RiggedRandom::new([4, 2]))
+			.value
+			.approx_eq(11.0));
 
-		let result = evaluation::eval_string("5 - 4 - 2").unwrap();
-		assert!(result.value.approx_eq(-1.0));
+		assert!(eval_unwrap("2^3^3").value.approx_eq(134_217_728.0));
 
-		let result = evaluation::eval_string("10d4");
-		// 	assert each individual roll in range [1, 4]. not confusing looking at all i promise -morgan 2023-09-27
-		assert!(
-			result.is_ok_and(|it| it.rolls.iter().all(|it| it
-				.iter()
-				.all(|it| it.original_value >= 1 && it.original_value <= 4)))
-		);
+		assert!(eval_unwrap("5 - 4 - 2").value.approx_eq(-1.0));
 
-		let result = evaluation::eval_string("2d6 + 3d6 * 6d6");
-		// assert 3 DiceRolls & all in range [1, 6]. again, very intuitive test code i promise -morgan 2023-09-27
-		assert!(result.is_ok_and(|it| it.rolls.len() == 3
-			&& it.rolls.iter().all(|it| it
-				.iter()
-				.all(|it| it.original_value >= 1 && it.original_value <= 6))));
+		assert!(eval_unwrap("10d4")
+			.ungrouped_rolls()
+			.all(|roll| (1..=4).contains(&roll.original_value)));
+
+		assert!(eval_unwrap("2d6 + 3d6 * 6d6")
+			.ungrouped_rolls()
+			.all(|roll| (1..=6).contains(&roll.original_value)));
 	}
 
 	#[test]
 	fn comparison_operator_test()
 	{
-		let mut rigged = RiggedRandom::new([3, 4, 6, 1, 1]);
-		let result = evaluation::eval_with_random("5d6 > 3", &mut rigged).unwrap();
-		let rolls = result
-			.rolls
-			.first()
-			.unwrap()
-			.rolls
-			.iter()
+		let rolls = eval_unwrap_with("5d6 > 3", &mut RiggedRandom::new([3, 4, 6, 1, 1]))
+			.ungrouped_rolls()
 			.filter_map(Roll::value)
 			.collect::<Vec<_>>();
 
@@ -153,18 +135,22 @@ mod tests
 	#[test]
 	fn rigged_random_test()
 	{
-		let mut rigged = RiggedRandom::new([3, 5, 2]);
-		let result = evaluation::eval_with_random("3d6", &mut rigged).unwrap();
-		let rolls = result
-			.rolls
-			.first()
-			.unwrap()
-			.rolls
-			.iter()
+		let rolls = eval_unwrap_with("3d6", &mut RiggedRandom::new([3, 5, 2]))
+			.ungrouped_rolls()
 			.map(|it| it.original_value)
 			.collect::<Vec<_>>();
 
 		assert_eq!(rolls, vec![3, 5, 2]);
+	}
+
+	fn eval_unwrap(input: &str) -> DiceEvaluation
+	{
+		evaluation::evaluate(input).unwrap()
+	}
+
+	fn eval_unwrap_with<R: RangeRng>(input: &str, random: &mut R) -> DiceEvaluation
+	{
+		evaluation::eval_with_random(input, random).unwrap()
 	}
 
 	fn token_vec_from(string: &str) -> Vec<Token>
@@ -196,20 +182,6 @@ mod tests
 		{
 			Self {
 				roll_queue: values.into_iter().map(|it| it.saturating_sub(1)).collect(),
-			}
-		}
-
-		pub fn push(&mut self, value: u32)
-		{
-			self.roll_queue.push_back(value.saturating_sub(1));
-		}
-		pub fn push_all<I>(&mut self, values: I)
-		where
-			I: Iterator<Item = u32>,
-		{
-			for value in values
-			{
-				self.push(value);
 			}
 		}
 

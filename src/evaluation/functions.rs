@@ -1,4 +1,4 @@
-use super::{DiceRoll, Operand, RollId};
+use super::{Operand, RollGroup, RollId};
 use crate::{evaluation::Roll, RangeRng};
 use thiserror::Error;
 
@@ -96,7 +96,7 @@ where
 
 			Ok(Operand::Roll {
 				id: RollId::new(),
-				data: DiceRoll::new(faces, roll_vec),
+				data: RollGroup::new(faces, roll_vec),
 			})
 		}
 		Err(Reason::Empty) => Err(MissingOperandError {
@@ -190,13 +190,12 @@ where
 	{
 		Ok(Operand::Roll {
 			id,
-			data: DiceRoll {
-				rolls: rolls
+			data: RollGroup::new(
+				rolls.faces,
+				rolls
 					.iter()
-					.map(|it| it.remove_unless(|it| predicate(it, &rhs)))
-					.collect(),
-				..rolls
-			},
+					.map(|it| it.remove_unless(|it| predicate(it, &rhs))),
+			),
 		})
 	}
 	else

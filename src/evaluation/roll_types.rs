@@ -1,17 +1,19 @@
-use std::cmp::Ordering;
+use std::{cmp::Ordering, fmt::Display};
 
 #[derive(Debug, Clone)]
-pub struct DiceRoll
+pub struct RollGroup
 {
-	pub rolls: Box<[Roll]>,
+	rolls: Box<[Roll]>,
 	pub faces: u32,
 }
-impl DiceRoll
+impl RollGroup
 {
-	pub fn new(faces: u32, rolls: Vec<Roll>) -> Self
+	pub fn new<I>(faces: u32, rolls: I) -> Self
+	where
+		I: IntoIterator<Item = Roll>,
 	{
 		Self {
-			rolls: rolls.into_boxed_slice(),
+			rolls: rolls.into_iter().collect(),
 			faces,
 		}
 	}
@@ -23,19 +25,54 @@ impl DiceRoll
 			.map(|it| it.original_value)
 			.sum::<u32>()
 	}
+	pub fn len(&self) -> usize
+	{
+		self.rolls.len()
+	}
+	pub fn is_empty(&self) -> bool
+	{
+		self.len() == 0
+	}
 	pub fn iter(&self) -> std::slice::Iter<Roll>
 	{
 		self.rolls.iter()
 	}
 }
-impl PartialEq for DiceRoll
+impl Display for RollGroup
+{
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result
+	{
+		write!(
+			f,
+			"{}d{}: [{}]",
+			self.len(),
+			self.faces,
+			self.rolls
+				.iter()
+				.map(ToString::to_string)
+				.collect::<Vec<_>>()
+				.join(", ")
+		)
+	}
+}
+impl<'a> IntoIterator for &'a RollGroup
+{
+	type Item = &'a Roll;
+	type IntoIter = std::slice::Iter<'a, Roll>;
+
+	fn into_iter(self) -> Self::IntoIter
+	{
+		self.rolls.iter()
+	}
+}
+impl PartialEq for RollGroup
 {
 	fn eq(&self, other: &Self) -> bool
 	{
 		self.total() == other.total()
 	}
 }
-impl PartialOrd for DiceRoll
+impl PartialOrd for RollGroup
 {
 	fn partial_cmp(&self, other: &Self) -> Option<Ordering>
 	{
@@ -91,6 +128,14 @@ impl Roll
 		{
 			self.remove()
 		}
+	}
+}
+impl Display for Roll
+{
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result
+	{
+		let wrap_str = self.is_removed().then_some("~~").unwrap_or_default();
+		write!(f, "{}{}{}", wrap_str, self.original_value, wrap_str)
 	}
 }
 

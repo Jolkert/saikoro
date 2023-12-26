@@ -1,4 +1,4 @@
-use super::{DiceRoll, RollId};
+use super::{RollGroup, RollId};
 use std::ops;
 
 #[derive(Debug, PartialEq, PartialOrd)]
@@ -8,7 +8,7 @@ pub enum Operand
 	Roll
 	{
 		id: RollId,
-		data: DiceRoll,
+		data: RollGroup,
 	},
 }
 impl Operand
