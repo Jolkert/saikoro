@@ -1,8 +1,8 @@
 mod operators;
 pub mod tokenization;
 pub use operators::*;
-use thiserror::Error;
 
+use thiserror::Error;
 use tokenization::{
 	PeekableTokenStream, Token, TokenType, TokenizationError, UnexpectedTokenError,
 };

@@ -171,7 +171,7 @@ pub enum UnaryDirection
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct BinaryOperator
 {
-	pub token: OpToken, // if we add an operator that cant be binary, we have to change this - morgan 2024-01-04
+	pub token: OpToken, // if we add an operator that cant be binary, we have to change this -morgan 2024-01-04
 	pub binding_power: BindingPower,
 }
 impl BinaryOperator

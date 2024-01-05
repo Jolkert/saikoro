@@ -5,11 +5,11 @@ mod roll_types;
 pub use operand::*;
 pub use roll_types::*;
 
-use self::functions::FilterNumberError;
 use crate::{
 	parsing::{self, tokenization::TokenizationError, Node, ParsingError},
 	RangeRng,
 };
+use functions::FilterNumberError;
 use std::{collections::HashMap, fmt::Display};
 use thiserror::Error;
 
