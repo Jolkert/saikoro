@@ -36,7 +36,14 @@ fn parse_min_power(stream: &mut PeekableTokenStream, min_power: u8) -> Result<No
 		Some(Token::Operator(op_token)) =>
 		{
 			let operator = UnaryOperator::try_from(op_token)?;
-			assert_eq!(operator.direction, UnaryDirection::Prefix);
+			if operator.direction != UnaryDirection::Prefix
+			{
+				return Err(UnaryWrongDirectionError {
+					operator,
+					expected_direction: UnaryDirection::Prefix,
+				}
+				.into());
+			}
 			Ok(Node::Unary {
 				operator,
 				argument: Box::new(parse_min_power(stream, operator.binding_power)?),
@@ -97,4 +104,14 @@ pub enum ParsingError
 	InvalidOperator(#[from] InvalidOperatorError),
 	#[error("{}", .0)]
 	UnexpectedToken(#[from] UnexpectedTokenError),
+	#[error("{}", .0)]
+	UnaryWrongDirection(#[from] UnaryWrongDirectionError),
+}
+
+#[derive(Debug, Error, Clone, Copy)]
+#[error("Expected {} operator, found {:?}", .expected_direction, .operator)]
+pub struct UnaryWrongDirectionError
+{
+	pub operator: UnaryOperator,
+	pub expected_direction: UnaryDirection,
 }

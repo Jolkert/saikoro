@@ -167,6 +167,21 @@ pub enum UnaryDirection
 	Prefix,
 	Postfix,
 }
+impl Display for UnaryDirection
+{
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result
+	{
+		write!(
+			f,
+			"{}",
+			match self
+			{
+				Self::Prefix => "Prefix",
+				Self::Postfix => "Postfix",
+			}
+		)
+	}
+}
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct BinaryOperator
