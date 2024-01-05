@@ -22,53 +22,53 @@ impl Operand
 		}
 	}
 }
-impl ops::Neg for Operand
+impl ops::Neg for &Operand
 {
-	type Output = Self;
+	type Output = Operand;
 	fn neg(self) -> Self::Output
 	{
-		Self::Number(-self.value())
+		Operand::Number(-self.value())
 	}
 }
 
-impl ops::Add for Operand
+impl ops::Add for &Operand
 {
-	type Output = Self;
+	type Output = Operand;
 	fn add(self, rhs: Self) -> Self::Output
 	{
-		Self::Number(self.value() + rhs.value())
+		Operand::Number(self.value() + rhs.value())
 	}
 }
-impl ops::Sub for Operand
+impl ops::Sub for &Operand
 {
-	type Output = Self;
+	type Output = Operand;
 	fn sub(self, rhs: Self) -> Self::Output
 	{
-		self + (-rhs)
+		Operand::Number(self.value() - rhs.value())
 	}
 }
-impl ops::Mul for Operand
+impl ops::Mul for &Operand
 {
-	type Output = Self;
+	type Output = Operand;
 	fn mul(self, rhs: Self) -> Self::Output
 	{
-		Self::Number(self.value() * rhs.value())
+		Operand::Number(self.value() * rhs.value())
 	}
 }
-impl ops::Div for Operand
+impl ops::Div for &Operand
 {
-	type Output = Self;
+	type Output = Operand;
 	fn div(self, rhs: Self) -> Self::Output
 	{
-		self * Self::Number(1.0 / rhs.value())
+		Operand::Number(self.value() / rhs.value())
 	}
 }
 
-impl ops::Rem for Operand
+impl ops::Rem for &Operand
 {
-	type Output = Self;
+	type Output = Operand;
 	fn rem(self, rhs: Self) -> Self::Output
 	{
-		Self::Number(self.value() % rhs.value())
+		Operand::Number(self.value() % rhs.value())
 	}
 }

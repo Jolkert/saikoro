@@ -1,252 +1,125 @@
-use super::{Operand, RollGroup, RollId};
-use crate::{evaluation::Roll, RangeRng};
+use crate::{
+	evaluation::{Operand, Roll, RollGroup, RollId},
+	RangeRng,
+};
 use thiserror::Error;
 
-type EvalResult = Result<Operand, MissingOperandError>;
+#[derive(Debug, Error, Copy, Clone)]
+#[error("Expected dice roll on left side of comparison")]
+pub struct FilterNumberError;
 
-pub fn unary_plus<R>(stack: &mut Vec<Operand>, _random: &mut R) -> EvalResult
-where
-	R: RangeRng,
+type EvalResult = Result<Operand, FilterNumberError>;
+
+pub fn unary_plus<R: RangeRng>(operand: &Operand, _random: &mut R) -> Operand
 {
-	stack.pop().map_or_else(
-		|| {
-			Err(MissingOperandError {
-				expected: 1,
-				found: 0,
-			})
-		},
-		|i| Ok(Operand::Number(i.value())),
-	)
+	Operand::Number(operand.value())
 }
-
-pub fn unary_minus<R>(stack: &mut Vec<Operand>, _random: &mut R) -> EvalResult
-where
-	R: RangeRng,
+pub fn unary_minus<R: RangeRng>(operand: &Operand, _random: &mut R) -> Operand
 {
-	stack.pop().map_or_else(
-		|| {
-			Err(MissingOperandError {
-				expected: 1,
-				found: 0,
-			})
-		},
-		|i| Ok(-i),
-	)
+	-operand
 }
-
-pub fn add<R>(stack: &mut Vec<Operand>, _random: &mut R) -> EvalResult
-where
-	R: RangeRng,
+pub fn unary_dice<R: RangeRng>(operand: &Operand, random: &mut R) -> Operand
 {
-	simple_binary_operation(stack, |lhs, rhs| lhs + rhs)
-}
+	let faces = clamp_f64_to_u32(operand.value());
+	let roll = Roll::new(random.rng_range(0..faces) + 1);
 
-pub fn subtract<R>(stack: &mut Vec<Operand>, _random: &mut R) -> EvalResult
-where
-	R: RangeRng,
-{
-	simple_binary_operation(stack, |lhs, rhs| lhs - rhs)
-}
-
-pub fn multiply<R>(stack: &mut Vec<Operand>, _random: &mut R) -> EvalResult
-where
-	R: RangeRng,
-{
-	simple_binary_operation(stack, |lhs, rhs| lhs * rhs)
-}
-
-pub fn divide<R>(stack: &mut Vec<Operand>, _random: &mut R) -> EvalResult
-where
-	R: RangeRng,
-{
-	simple_binary_operation(stack, |lhs, rhs| lhs * rhs)
-}
-
-pub fn modulo<R>(stack: &mut Vec<Operand>, _random: &mut R) -> EvalResult
-where
-	R: RangeRng,
-{
-	simple_binary_operation(stack, |lhs, rhs| lhs % rhs)
-}
-
-pub fn pow<R>(stack: &mut Vec<Operand>, _random: &mut R) -> EvalResult
-where
-	R: RangeRng,
-{
-	simple_binary_operation(stack, |lhs, rhs| {
-		Operand::Number(lhs.value().powf(rhs.value()))
-	})
-}
-
-pub fn roll<R>(stack: &mut Vec<Operand>, random: &mut R) -> EvalResult
-where
-	R: RangeRng,
-{
-	match double_pop(stack)
-	{
-		Ok((rhs, lhs)) =>
-		{
-			let mut roll_vec = Vec::<Roll>::new();
-			let faces = clamp_f64_to_u32(rhs.value());
-
-			for _ in 0..(clamp_f64_to_u32(lhs.value()))
-			{
-				roll_vec.push(Roll::new(random.rng_range(0..faces) + 1));
-			}
-
-			Ok(Operand::Roll {
-				id: RollId::new(),
-				data: RollGroup::new(faces, roll_vec),
-			})
-		}
-		Err(Reason::Empty) => Err(MissingOperandError {
-			expected: 2,
-			found: 0,
-		}),
-		Err(Reason::One) => Err(MissingOperandError {
-			expected: 2,
-			found: 1,
-		}),
+	Operand::Roll {
+		id: RollId::new(),
+		data: RollGroup::new(faces, [roll]),
 	}
 }
 
-pub fn equal<R>(stack: &mut Vec<Operand>, _random: &mut R) -> EvalResult
-where
-	R: RangeRng,
+pub fn add<R: RangeRng>(lhs: &Operand, rhs: &Operand, _random: &mut R) -> EvalResult
 {
-	filter_condition(stack, |lhs, rhs| {
-		(f64::from(lhs.original_value) - rhs.value()).abs() < f64::EPSILON
-	})
+	Ok(lhs + rhs)
 }
-
-pub fn not_equal<R>(stack: &mut Vec<Operand>, _random: &mut R) -> EvalResult
-where
-	R: RangeRng,
+pub fn subtract<R: RangeRng>(lhs: &Operand, rhs: &Operand, _random: &mut R) -> EvalResult
 {
-	filter_condition(stack, |lhs, rhs| {
-		(f64::from(lhs.original_value) - rhs.value()).abs() > f64::EPSILON
-	})
+	Ok(lhs - rhs)
 }
-
-pub fn greater<R>(stack: &mut Vec<Operand>, _random: &mut R) -> EvalResult
-where
-	R: RangeRng,
+pub fn multiply<R: RangeRng>(lhs: &Operand, rhs: &Operand, _random: &mut R) -> EvalResult
 {
-	filter_condition(stack, |lhs, rhs| {
-		(f64::from(lhs.original_value)) > rhs.value()
-	})
+	Ok(lhs * rhs)
 }
-
-pub fn less<R>(stack: &mut Vec<Operand>, _random: &mut R) -> EvalResult
-where
-	R: RangeRng,
+pub fn divide<R: RangeRng>(lhs: &Operand, rhs: &Operand, _random: &mut R) -> EvalResult
 {
-	filter_condition(stack, |lhs, rhs| {
-		(f64::from(lhs.original_value)) < rhs.value()
-	})
+	Ok(lhs / rhs)
 }
-
-pub fn greater_or_equal<R>(stack: &mut Vec<Operand>, _random: &mut R) -> EvalResult
-where
-	R: RangeRng,
+pub fn modulo<R: RangeRng>(lhs: &Operand, rhs: &Operand, _random: &mut R) -> EvalResult
 {
-	filter_condition(stack, |lhs, rhs| {
-		(f64::from(lhs.original_value)) >= rhs.value()
-	})
+	Ok(lhs % rhs)
 }
-
-pub fn less_or_equal<R>(stack: &mut Vec<Operand>, _random: &mut R) -> EvalResult
-where
-	R: RangeRng,
+pub fn power<R: RangeRng>(lhs: &Operand, rhs: &Operand, _random: &mut R) -> EvalResult
 {
-	filter_condition(stack, |lhs, rhs| {
-		(f64::from(lhs.original_value)) <= rhs.value()
-	})
+	Ok(Operand::Number(lhs.value().powf(rhs.value())))
 }
-
-fn simple_binary_operation<F>(stack: &mut Vec<Operand>, operation: F) -> EvalResult
-where
-	F: FnOnce(Operand, Operand) -> Operand,
+pub fn dice<R: RangeRng>(lhs: &Operand, rhs: &Operand, random: &mut R) -> EvalResult
 {
-	match double_pop(stack)
+	let mut roll_vec = Vec::<Roll>::new();
+	let faces = clamp_f64_to_u32(rhs.value());
+
+	for _ in 0..(clamp_f64_to_u32(lhs.value()))
 	{
-		Ok((rhs, lhs)) => Ok(operation(lhs, rhs)),
-		Err(Reason::Empty) => Err(MissingOperandError {
-			expected: 2,
-			found: 0,
-		}),
-		Err(Reason::One) => Err(MissingOperandError {
-			expected: 2,
-			found: 1,
-		}),
+		roll_vec.push(Roll::new(random.rng_range(0..faces) + 1));
 	}
+
+	Ok(Operand::Roll {
+		id: RollId::new(),
+		data: RollGroup::new(faces, roll_vec),
+	})
 }
 
-fn filter_condition<F>(stack: &mut Vec<Operand>, predicate: F) -> EvalResult
+pub fn comparison<F>(lhs: &Operand, rhs: &Operand, predicate: F) -> EvalResult
 where
 	F: Fn(&Roll, &Operand) -> bool,
 {
-	if let Ok((rhs, Operand::Roll { id, data: rolls })) = double_pop(stack)
+	if let Operand::Roll { id, data } = lhs
 	{
 		Ok(Operand::Roll {
-			id,
+			id: *id,
 			data: RollGroup::new(
-				rolls.faces,
-				rolls
-					.iter()
-					.map(|it| it.remove_unless(|it| predicate(it, &rhs))),
+				data.faces,
+				data.iter()
+					.map(|roll| roll.remove_unless(|it| predicate(it, rhs))),
 			),
 		})
 	}
 	else
 	{
-		Err(MissingOperandError {
-			expected: 2,
-			found: 0,
-		})
+		Err(FilterNumberError)
 	}
 }
-
-fn double_pop<T>(vec: &mut Vec<T>) -> Result<(T, T), Reason>
+pub fn equal<R: RangeRng>(lhs: &Operand, rhs: &Operand, _rng: &mut R) -> EvalResult
 {
-	let double = (vec.pop(), vec.pop());
-	if let (Some(first), Some(second)) = double
-	{
-		Ok((first, second))
-	}
-	else
-	{
-		Err(match double
-		{
-			(None, None) => Reason::Empty,
-			_ => Reason::One,
-		})
-	}
+	comparison(lhs, rhs, |l, r| {
+		(f64::from(l.original_value) - r.value()).abs() < f64::EPSILON
+	})
 }
-
-#[derive(Debug, Error)]
-#[error("expected {} operands; found {}", .expected, .found)]
-pub struct MissingOperandError
+pub fn not_equal<R: RangeRng>(lhs: &Operand, rhs: &Operand, _rng: &mut R) -> EvalResult
 {
-	pub expected: u8,
-	pub found: u8,
+	comparison(lhs, rhs, |l, r| {
+		(f64::from(l.original_value) - r.value()).abs() > f64::EPSILON
+	})
 }
-impl MissingOperandError
+pub fn greater<R: RangeRng>(lhs: &Operand, rhs: &Operand, _rng: &mut R) -> EvalResult
 {
-	pub fn new(expected: u8, found: u8) -> Self
-	{
-		Self { expected, found }
-	}
+	comparison(lhs, rhs, |l, r| f64::from(l.original_value) > r.value())
+}
+pub fn less<R: RangeRng>(lhs: &Operand, rhs: &Operand, _rng: &mut R) -> EvalResult
+{
+	comparison(lhs, rhs, |l, r| f64::from(l.original_value) < r.value())
+}
+pub fn greater_or_equal<R: RangeRng>(lhs: &Operand, rhs: &Operand, _rng: &mut R) -> EvalResult
+{
+	comparison(lhs, rhs, |l, r| f64::from(l.original_value) >= r.value())
+}
+pub fn less_or_equal<R: RangeRng>(lhs: &Operand, rhs: &Operand, _rng: &mut R) -> EvalResult
+{
+	comparison(lhs, rhs, |l, r| f64::from(l.original_value) <= r.value())
 }
 
 #[allow(clippy::cast_sign_loss)]
 fn clamp_f64_to_u32(value: f64) -> u32
 {
 	value.clamp(f64::from(u32::MIN), f64::from(u32::MAX)) as u32
-}
-
-enum Reason
-{
-	Empty,
-	One,
 }

@@ -24,7 +24,7 @@ mod tests
 {
 	use crate::evaluation::{self, DiceEvaluation, Operand, Roll};
 	use crate::parsing::tokenization::{OpToken, Token, TokenStream};
-	use crate::parsing::{self, Node, Operator, Valency};
+	use crate::parsing::{self, BinaryOperator, Node};
 	use crate::RangeRng;
 	use std::collections::VecDeque;
 
@@ -53,22 +53,6 @@ mod tests
 	}
 
 	#[test]
-	fn basic_parse_queue_test()
-	{
-		let output = parsing::rpn_queue_from("2+7*3").unwrap();
-		let expected: VecDeque<Node> = vec![
-			Node::from(2.0),
-			Node::from(7.0),
-			Node::from(3.0),
-			Node::from(Operator::from_token(OpToken::Multiply, Valency::Binary)),
-			Node::from(Operator::from_token(OpToken::Plus, Valency::Binary)),
-		]
-		.into();
-
-		assert_eq!(output, expected);
-	}
-
-	#[test]
 	fn whitespace_test()
 	{
 		let without_whitespace = token_vec_from("17+9-3");
@@ -80,9 +64,12 @@ mod tests
 	#[test]
 	fn eval_fn_test()
 	{
-		let plus = Operator::from_token(OpToken::Plus, Valency::Binary);
-		let mut item_stack = vec![Operand::Number(2.0), Operand::Number(5.0)];
-		let result = plus.eval(&mut item_stack, &mut rand::thread_rng());
+		let plus = BinaryOperator::from(OpToken::Plus);
+		let result = plus.eval(
+			&Operand::Number(2.0),
+			&Operand::Number(5.0),
+			&mut rand::thread_rng(),
+		);
 
 		assert_eq!(result.unwrap(), Operand::Number(7.0));
 	}
@@ -141,6 +128,86 @@ mod tests
 			.collect::<Vec<_>>();
 
 		assert_eq!(rolls, vec![3, 5, 2]);
+	}
+
+	#[test]
+	fn tree_test()
+	{
+		use Node::{Binary, Leaf};
+
+		let actual = parsing::parse_tree_from("2d6 > 3 + 8d6 * 3^4 / 2 - 3 + 1").unwrap();
+		let expected = Binary {
+			operator: OpToken::Plus.into(),
+			left: Box::new(Binary {
+				operator: OpToken::Minus.into(),
+				left: Box::new(Binary {
+					operator: OpToken::Plus.into(),
+					left: Box::new(Binary {
+						operator: OpToken::GreaterThan.into(),
+						left: Box::new(Binary {
+							operator: OpToken::Dice.into(),
+							left: Box::new(Leaf(2.0)),
+							right: Box::new(Leaf(6.0)),
+						}),
+						right: Box::new(Leaf(3.0)),
+					}),
+					right: Box::new(Binary {
+						operator: OpToken::Divide.into(),
+						left: Box::new(Binary {
+							operator: OpToken::Multiply.into(),
+							left: Box::new(Binary {
+								operator: OpToken::Dice.into(),
+								left: Box::new(Leaf(8.0)),
+								right: Box::new(Leaf(6.0)),
+							}),
+							right: Box::new(Binary {
+								operator: OpToken::Power.into(),
+								left: Box::new(Leaf(3.0)),
+								right: Box::new(Leaf(4.0)),
+							}),
+						}),
+						right: Box::new(Leaf(2.0)),
+					}),
+				}),
+				right: Box::new(Leaf(3.0)),
+			}),
+			right: Box::new(Leaf(1.0)),
+		};
+		assert_eq!(expected, actual);
+	}
+
+	#[test]
+	pub fn unary_test()
+	{
+		let actual = parsing::parse_tree_from("-4+5").unwrap();
+		let expected = Node::Binary {
+			operator: OpToken::Plus.into(),
+			left: Box::new(Node::Unary {
+				operator: OpToken::Minus.try_into().unwrap(),
+				argument: Box::new(Node::Leaf(4.0)),
+			}),
+			right: Box::new(Node::Leaf(5.0)),
+		};
+		assert_eq!(expected, actual);
+
+		let actual = parsing::parse_tree_from("-2^5").unwrap();
+		let expected = Node::Unary {
+			operator: OpToken::Minus.try_into().unwrap(),
+			argument: Box::new(Node::Binary {
+				operator: OpToken::Power.into(),
+				left: Box::new(Node::Leaf(2.0)),
+				right: Box::new(Node::Leaf(5.0)),
+			}),
+		};
+		assert_eq!(expected, actual);
+	}
+
+	#[test]
+	pub fn tree_eval_test()
+	{
+		let actual = evaluation::evaluate("2 + 5 * 7").unwrap();
+		let expected = 37.0;
+		assert!((expected - actual.value).abs() < f64::EPSILON);
 	}
 
 	fn eval_unwrap(input: &str) -> DiceEvaluation

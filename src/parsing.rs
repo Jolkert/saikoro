@@ -1,119 +1,100 @@
 mod operators;
 pub mod tokenization;
 pub use operators::*;
+use thiserror::Error;
 
-use self::tokenization::TokenizationError;
-use std::collections::VecDeque;
-use tokenization::{Token, TokenStream};
+use tokenization::{
+	PeekableTokenStream, Token, TokenType, TokenizationError, UnexpectedTokenError,
+};
 
-// TODO: better name -morgan 2023-09-03
 #[derive(Debug, PartialEq)]
 pub enum Node
 {
-	Number(f64),
-	Operator(Operator),
-}
-impl From<f64> for Node
-{
-	fn from(value: f64) -> Self
+	Binary
 	{
-		Self::Number(value)
-	}
-}
-impl From<Operator> for Node
-{
-	fn from(value: Operator) -> Self
+		operator: BinaryOperator,
+		left: Box<Self>,
+		right: Box<Self>,
+	},
+	Unary
 	{
-		Self::Operator(value)
-	}
+		operator: UnaryOperator,
+		argument: Box<Self>,
+	},
+	Leaf(f64),
 }
 
-pub fn rpn_queue_from(string: &str) -> Result<VecDeque<Node>, TokenizationError>
+pub fn parse_tree_from(input: &str) -> Result<Node, ParsingError>
 {
-	let stream = TokenStream::new(string);
-	let mut output_queue = VecDeque::<Node>::new();
-	let mut operator_stack = Vec::<OpOrDelim>::new();
-
-	let mut previous: Option<Token> = None;
-	for token in stream
+	parse_min_power(&mut PeekableTokenStream::new(input), 0)
+}
+fn parse_min_power(stream: &mut PeekableTokenStream, min_power: u8) -> Result<Node, ParsingError>
+{
+	let mut lhs = match stream.next().transpose()?
 	{
-		let token = token?;
-		match token
+		Some(Token::Number(n)) => Ok(Node::Leaf(n)),
+		Some(Token::Operator(op_token)) =>
 		{
-			Token::Number(num) =>
-			{
-				output_queue.push_back(Node::Number(num));
-			}
-			Token::Operator(op_token) =>
-			{
-				let operator =
-					Operator::from_token(
-						op_token,
-						match previous
-						{
-							None
-							| Some(Token::Operator(_) | Token::Delimiter { is_open: true }) => Valency::Unary,
-							_ => Valency::Binary,
-						},
-					);
-
-				push_operator_to_stack(operator, &mut operator_stack, &mut output_queue);
-			}
-			Token::Delimiter { is_open } =>
-			{
-				if is_open
-				{
-					if let Some(Token::Number(_) | Token::Delimiter { is_open: true }) = previous
-					{
-						push_operator_to_stack(
-							Operator::from_token(OpToken::Multiply, Valency::Binary),
-							&mut operator_stack,
-							&mut output_queue,
-						);
-					}
-				}
-				else
-				{
-					while let Some(OpOrDelim::Operator(op)) = operator_stack.pop()
-					{
-						output_queue.push_back(Node::Operator(op));
-					}
-				}
-			}
+			let operator = UnaryOperator::try_from(op_token)?;
+			assert_eq!(operator.direction, UnaryDirection::Prefix);
+			Ok(Node::Unary {
+				operator,
+				argument: Box::new(parse_min_power(stream, operator.binding_power)?),
+			})
 		}
-
-		previous = Some(token);
-	}
-
-	while let Some(OpOrDelim::Operator(op)) = operator_stack.pop()
-	{
-		output_queue.push_back(Node::Operator(op));
-	}
-
-	Ok(output_queue)
-}
-
-fn push_operator_to_stack(
-	operator: Operator,
-	operator_stack: &mut Vec<OpOrDelim>,
-	output_queue: &mut VecDeque<Node>,
-)
-{
-	while let Some(last) = operator_stack.last()
-	{
-		if let OpOrDelim::Operator(last_op) = last
-			&& last_op.valency <= operator.valency
-			&& last_op.priority >= (operator.priority + operator.associativity)
+		Some(Token::OpenDelimiter) =>
 		{
-			if let Some(OpOrDelim::Operator(it)) = operator_stack.pop()
-			{
-				output_queue.push_back(Node::Operator(it));
-			}
+			let value = parse_min_power(stream, 0)?;
+			stream.consume_expecting(TokenType::CloseDelimiter)?;
+			Ok(value)
 		}
-		else
+		token => Err(UnexpectedTokenError {
+			found: token.map(|it| it.token_type()),
+			expected: TokenType::Number | TokenType::Operator,
+		}),
+	}?;
+
+	while let Some(peeked) = stream.peek()
+	{
+		let op = match peeked
+		{
+			Ok(Token::Operator(op)) => Ok(BinaryOperator::from(*op)),
+			Ok(Token::CloseDelimiter) => break,
+			result =>
+			{
+				let token = result.clone()?;
+				Err(UnexpectedTokenError {
+					found: Some(token.token_type()),
+					expected: TokenType::Operator.into(),
+				})
+			}
+		}?;
+
+		let binding_power = op.binding_power;
+		if binding_power.left < min_power
 		{
 			break;
 		}
+
+		stream.consume()?;
+		let rhs = parse_min_power(stream, binding_power.right)?;
+		lhs = Node::Binary {
+			operator: op,
+			left: Box::new(lhs),
+			right: Box::new(rhs),
+		}
 	}
-	operator_stack.push(OpOrDelim::Operator(operator));
+
+	Ok(lhs)
+}
+
+#[derive(Debug, Error, Clone, Copy)]
+pub enum ParsingError
+{
+	#[error("{}", .0)]
+	Tokenization(#[from] TokenizationError),
+	#[error("{}", .0)]
+	InvalidOperator(#[from] InvalidOperatorError),
+	#[error("{}", .0)]
+	UnexpectedToken(#[from] UnexpectedTokenError),
 }

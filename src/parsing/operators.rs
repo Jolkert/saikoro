@@ -1,168 +1,12 @@
 use crate::{
 	evaluation::{
-		functions::{self, MissingOperandError},
+		functions::{self, FilterNumberError},
 		Operand,
 	},
 	RangeRng,
 };
-use std::{fmt::Display, ops, str::FromStr};
+use std::{fmt::Display, str::FromStr};
 use thiserror::Error;
-
-#[derive(Debug, PartialEq, Eq, Clone)]
-pub struct Operator
-{
-	pub priority: Priority,
-	pub valency: Valency,
-	pub associativity: Associativity,
-	pub token: OpToken,
-}
-impl Operator
-{
-	pub fn from_token(token: OpToken, valency: Valency) -> Self
-	{
-		let priority = match token
-		{
-			OpToken::Plus | OpToken::Minus => Priority::ADDITIVE,
-			OpToken::Multiply | OpToken::Divide | OpToken::Modulus => Priority::MULTIPLICITIVE,
-			OpToken::Power => Priority::POWER,
-			OpToken::Dice => Priority::DICE,
-			OpToken::Equals
-			| OpToken::NotEquals
-			| OpToken::GreaterThan
-			| OpToken::LessThan
-			| OpToken::GreaterOrEqual
-			| OpToken::LessOrEqual => Priority::COMPARISON,
-		};
-
-		Self {
-			priority,
-			valency,
-			associativity: if matches!(token, OpToken::Power)
-			{
-				Associativity::Right
-			}
-			else
-			{
-				Associativity::Left
-			},
-			token,
-		}
-	}
-
-	pub fn eval_fn<R>(
-		&self,
-	) -> impl Fn(&mut Vec<Operand>, &mut R) -> Result<Operand, MissingOperandError>
-	where
-		R: RangeRng,
-	{
-		use OpToken as Token;
-		match self.token
-		{
-			Token::Plus =>
-			{
-				if self.valency == Valency::Unary
-				{
-					functions::unary_plus
-				}
-				else
-				{
-					functions::add
-				}
-			}
-			Token::Minus =>
-			{
-				if self.valency == Valency::Unary
-				{
-					functions::unary_minus
-				}
-				else
-				{
-					functions::subtract
-				}
-			}
-			Token::Multiply => functions::multiply,
-			Token::Divide => functions::divide,
-			Token::Modulus => functions::modulo,
-			Token::Power => functions::pow,
-			Token::Dice => functions::roll,
-			Token::Equals => functions::equal,
-			Token::NotEquals => functions::not_equal,
-			Token::GreaterThan => functions::greater,
-			Token::LessThan => functions::less,
-			Token::GreaterOrEqual => functions::greater_or_equal,
-			Token::LessOrEqual => functions::less_or_equal,
-		}
-	}
-
-	pub fn eval<R>(
-		&self,
-		stack: &mut Vec<Operand>,
-		random: &mut R,
-	) -> Result<Operand, MissingOperandError>
-	where
-		R: RangeRng,
-	{
-		self.eval_fn()(stack, random)
-	}
-}
-impl From<(OpToken, Valency)> for Operator
-{
-	fn from(value: (OpToken, Valency)) -> Self
-	{
-		Self::from_token(value.0, value.1)
-	}
-}
-
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
-pub struct Priority(u32);
-impl Priority
-{
-	pub const ADDITIVE: Self = Self(0);
-	pub const MULTIPLICITIVE: Self = Self(1);
-	pub const COMPARISON: Self = Self(2);
-	pub const POWER: Self = Self(3);
-	pub const DICE: Self = Self(4);
-}
-impl ops::Add<u32> for Priority
-{
-	type Output = Self;
-
-	fn add(self, rhs: u32) -> Self::Output
-	{
-		Self(self.0 + rhs)
-	}
-}
-impl ops::Add<Associativity> for Priority
-{
-	type Output = Self;
-	fn add(self, rhs: Associativity) -> Self::Output
-	{
-		self + u32::from(rhs == Associativity::Right)
-	}
-}
-
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
-pub enum Valency
-{
-	Unary = 1,
-	Binary,
-}
-
-#[derive(PartialEq, Eq, Clone, Copy, Debug)]
-pub enum Associativity
-{
-	Left,
-	Right,
-}
-
-pub enum OpOrDelim
-{
-	Operator(Operator),
-	Delimiter
-	{
-		is_open: bool,
-	},
-}
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum OpToken
@@ -247,5 +91,161 @@ impl From<&str> for ParseOperatorError
 		Self {
 			operator: value.to_owned().into_boxed_str(),
 		}
+	}
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub struct UnaryOperator
+{
+	pub token: UnaryOpToken,
+	pub binding_power: u8,
+	pub direction: UnaryDirection,
+}
+impl UnaryOperator
+{
+	fn eval_fn<R: RangeRng>(self) -> impl Fn(&Operand, &mut R) -> Operand
+	{
+		match self.token
+		{
+			UnaryOpToken::Plus => functions::unary_plus,
+			UnaryOpToken::Minus => functions::unary_minus,
+			UnaryOpToken::Dice => functions::unary_dice,
+		}
+	}
+
+	pub fn eval<R: RangeRng>(&self, operand: &Operand, rng: &mut R) -> Operand
+	{
+		self.eval_fn()(operand, rng)
+	}
+}
+impl TryFrom<OpToken> for UnaryOperator
+{
+	type Error = InvalidOperatorError;
+
+	fn try_from(token: OpToken) -> Result<Self, Self::Error>
+	{
+		use UnaryOpToken as Op;
+		let token = UnaryOpToken::try_from(token)?;
+		let (binding_power, direction) = match token
+		{
+			Op::Plus | Op::Minus => (7, UnaryDirection::Prefix),
+			Op::Dice => (13, UnaryDirection::Prefix),
+		};
+		Ok(Self {
+			token,
+			binding_power,
+			direction,
+		})
+	}
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum UnaryOpToken
+{
+	Plus,
+	Minus,
+	Dice,
+}
+impl TryFrom<OpToken> for UnaryOpToken
+{
+	type Error = InvalidOperatorError;
+	fn try_from(value: OpToken) -> Result<Self, Self::Error>
+	{
+		match value
+		{
+			OpToken::Plus => Ok(Self::Plus),
+			OpToken::Minus => Ok(Self::Minus),
+			OpToken::Dice => Ok(Self::Dice),
+			_ => Err(InvalidOperatorError(value)),
+		}
+	}
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum UnaryDirection
+{
+	Prefix,
+	Postfix,
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub struct BinaryOperator
+{
+	pub token: OpToken, // if we add an operator that cant be binary, we have to change this - morgan 2024-01-04
+	pub binding_power: BindingPower,
+}
+impl BinaryOperator
+{
+	fn eval_fn<R: RangeRng>(
+		self,
+	) -> impl Fn(&Operand, &Operand, &mut R) -> Result<Operand, FilterNumberError>
+	{
+		match self.token
+		{
+			OpToken::Plus => functions::add,
+			OpToken::Minus => functions::subtract,
+			OpToken::Multiply => functions::multiply,
+			OpToken::Divide => functions::divide,
+			OpToken::Modulus => functions::modulo,
+			OpToken::Power => functions::power,
+			OpToken::Dice => functions::dice,
+			OpToken::Equals => functions::equal,
+			OpToken::NotEquals => functions::not_equal,
+			OpToken::GreaterThan => functions::greater,
+			OpToken::LessThan => functions::less,
+			OpToken::GreaterOrEqual => functions::greater_or_equal,
+			OpToken::LessOrEqual => functions::less_or_equal,
+		}
+	}
+
+	pub fn eval<R: RangeRng>(
+		&self,
+		lhs: &Operand,
+		rhs: &Operand,
+		random: &mut R,
+	) -> Result<Operand, FilterNumberError>
+	{
+		self.eval_fn()(lhs, rhs, random)
+	}
+}
+impl From<OpToken> for BinaryOperator
+{
+	fn from(token: OpToken) -> Self
+	{
+		use OpToken as Op;
+		Self {
+			token,
+			binding_power: match token
+			{
+				Op::Plus | Op::Minus => BindingPower::new(1, 2),
+				Op::Multiply | Op::Divide | Op::Modulus => BindingPower::new(3, 4),
+				Op::Equals
+				| Op::NotEquals
+				| Op::GreaterThan
+				| Op::LessThan
+				| Op::GreaterOrEqual
+				| Op::LessOrEqual => BindingPower::new(5, 6),
+				Op::Power => BindingPower::new(10, 9),
+				Op::Dice => BindingPower::new(11, 12),
+			},
+		}
+	}
+}
+
+#[derive(Debug, Error, Clone, Copy)]
+#[error("Failed to convert {} to unary operator!", .0)]
+pub struct InvalidOperatorError(OpToken);
+
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub struct BindingPower
+{
+	pub left: u8,
+	pub right: u8,
+}
+impl BindingPower
+{
+	pub const fn new(left: u8, right: u8) -> Self
+	{
+		Self { left, right }
 	}
 }

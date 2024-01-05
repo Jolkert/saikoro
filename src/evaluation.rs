@@ -5,12 +5,11 @@ mod roll_types;
 pub use operand::*;
 pub use roll_types::*;
 
+use self::functions::FilterNumberError;
 use crate::{
-	parsing::{self, tokenization::TokenizationError, Node},
+	parsing::{self, tokenization::TokenizationError, Node, ParsingError},
 	RangeRng,
 };
-use functions::MissingOperandError;
-use rand::thread_rng;
 use std::{collections::HashMap, fmt::Display};
 use thiserror::Error;
 
@@ -46,49 +45,54 @@ impl Display for DiceEvaluation
 
 pub fn evaluate(input: &str) -> Result<DiceEvaluation, EvaluationError>
 {
-	eval_with_random(input, &mut thread_rng())
+	eval_with_random(input, &mut rand::thread_rng())
 }
-
-pub fn eval_with_random<R>(input: &str, random: &mut R) -> Result<DiceEvaluation, EvaluationError>
+pub fn eval_with_random<R>(input: &str, rng: &mut R) -> Result<DiceEvaluation, EvaluationError>
 where
 	R: RangeRng,
 {
-	let mut rpn_queue = parsing::rpn_queue_from(input)?;
-	let mut eval_stack = Vec::<Operand>::new();
-	let mut roll_list = HashMap::<RollId, RollGroup>::new();
+	let mut rolls = HashMap::<RollId, RollGroup>::new();
 
-	while let Some(current) = rpn_queue.pop_front()
+	let root = parsing::parse_tree_from(input)?;
+	let value = eval_node(root, rng, &mut rolls)?.value();
+
+	Ok(DiceEvaluation {
+		value,
+		roll_groups: rolls.values().cloned().collect(),
+	})
+}
+fn eval_node<R>(
+	node: Node,
+	rng: &mut R,
+	rolls: &mut HashMap<RollId, RollGroup>,
+) -> Result<Operand, EvaluationError>
+where
+	R: RangeRng,
+{
+	let operand = match node
 	{
-		match current
+		Node::Leaf(n) => Operand::Number(n),
+		Node::Unary { operator, argument } =>
 		{
-			Node::Number(n) => eval_stack.push(Operand::Number(n)),
-			Node::Operator(op) => match op.eval(&mut eval_stack, random)?
-			{
-				Operand::Number(n) => eval_stack.push(Operand::Number(n)),
-				Operand::Roll { id, data } =>
-				{
-					roll_list.insert(id, data.clone());
-					eval_stack.push(Operand::Roll { id, data });
-				}
-			},
+			operator.eval(&eval_node(*argument, rng, rolls)?, rng)
 		}
+		Node::Binary {
+			operator,
+			left,
+			right,
+		} => operator.eval(
+			&eval_node(*left, rng, rolls)?,
+			&eval_node(*right, rng, rolls)?,
+			rng,
+		)?,
+	};
+
+	if let Operand::Roll { id, data } = &operand
+	{
+		rolls.insert(*id, data.clone());
 	}
 
-	eval_stack.pop().map_or_else(
-		|| {
-			// this needs to change later
-			Err(EvaluationError::from(MissingOperandError {
-				expected: 0,
-				found: 0,
-			}))
-		},
-		|operand| {
-			Ok(DiceEvaluation {
-				value: operand.value(),
-				roll_groups: roll_list.values().cloned().collect(),
-			})
-		},
-	)
+	Ok(operand)
 }
 
 #[derive(Debug, Error)]
@@ -97,5 +101,7 @@ pub enum EvaluationError
 	#[error("{}", .0)]
 	Tokenization(#[from] TokenizationError),
 	#[error("{}", .0)]
-	MissingOperand(#[from] MissingOperandError),
+	Parsing(#[from] ParsingError),
+	#[error("{}", .0)]
+	FilterNumber(#[from] FilterNumberError),
 }

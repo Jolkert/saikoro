@@ -23,12 +23,11 @@ command = [
 	"always",
 	"--all-targets",
 	"--",
+
 	"-W",
 	"clippy::pedantic",
 	"-W",
 	"clippy::nursery",
-	"-A",
-	"clippy::missing_const_for_fn",
 	"-W",
 	"clippy::empty_structs_with_brackets",
 	"-W",
@@ -37,16 +36,21 @@ command = [
 	"clippy::same_name_method",
 	"-W",
 	"clippy::lossy_float_literal",
+
+	"-A",
+	"clippy::missing_const_for_fn",
 	"-A",
 	"clippy::cast_possible_truncation",
 	"-A",
-	"clippy::module_name_repetitions",
-	"-A",
 	"clippy::missing-errors-doc",
+	"-A",
+	"clippy::module_name_repetitions",
 	"-A",
 	"clippy::must-use-candidate",
 	"-A",
 	"clippy::explicit-iter-loop",
+	"-A",
+	"clippy::trivial-regex",
 ]
 need_stdout = false
 
