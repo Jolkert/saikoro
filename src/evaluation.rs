@@ -6,10 +6,9 @@ pub use operand::*;
 pub use roll_types::*;
 
 use crate::{
-	parsing::{self, tokenization::TokenizationError, Node, ParsingError},
+	parsing::{self, tokenization::TokenizationError, BadOperandError, Node, ParsingError},
 	RangeRng,
 };
-use functions::FilterNumberError;
 use std::{collections::HashMap, fmt::Display};
 use thiserror::Error;
 
@@ -72,17 +71,14 @@ where
 	let operand = match node
 	{
 		Node::Leaf(n) => Operand::Number(n),
-		Node::Unary { operator, argument } =>
-		{
-			operator.eval(&eval_node(*argument, rng, rolls)?, rng)
-		}
+		Node::Unary { operator, argument } => operator.eval(eval_node(*argument, rng, rolls)?, rng),
 		Node::Binary {
 			operator,
 			left,
 			right,
 		} => operator.eval(
-			&eval_node(*left, rng, rolls)?,
-			&eval_node(*right, rng, rolls)?,
+			eval_node(*left, rng, rolls)?,
+			eval_node(*right, rng, rolls)?,
 			rng,
 		)?,
 	};
@@ -103,5 +99,5 @@ pub enum EvaluationError
 	#[error("{}", .0)]
 	Parsing(#[from] ParsingError),
 	#[error("{}", .0)]
-	FilterNumber(#[from] FilterNumberError),
+	FilterNumber(#[from] BadOperandError),
 }

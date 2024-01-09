@@ -66,8 +66,8 @@ mod tests
 	{
 		let plus = BinaryOperator::from(OpToken::Plus);
 		let result = plus.eval(
-			&Operand::Number(2.0),
-			&Operand::Number(5.0),
+			Operand::Number(2.0),
+			Operand::Number(5.0),
 			&mut rand::thread_rng(),
 		);
 

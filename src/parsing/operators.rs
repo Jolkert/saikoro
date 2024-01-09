@@ -1,7 +1,7 @@
 use crate::{
 	evaluation::{
-		functions::{self, FilterNumberError},
-		Operand,
+		functions::{self, OperatorError},
+		Operand, OperandType,
 	},
 	RangeRng,
 };
@@ -95,6 +95,27 @@ impl From<&str> for ParseOperatorError
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub enum Operator
+{
+	Unary(UnaryOperator),
+	Binary(BinaryOperator),
+}
+impl From<UnaryOperator> for Operator
+{
+	fn from(value: UnaryOperator) -> Self
+	{
+		Self::Unary(value)
+	}
+}
+impl From<BinaryOperator> for Operator
+{
+	fn from(value: BinaryOperator) -> Self
+	{
+		Self::Binary(value)
+	}
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct UnaryOperator
 {
 	pub token: UnaryOpToken,
@@ -103,7 +124,7 @@ pub struct UnaryOperator
 }
 impl UnaryOperator
 {
-	fn eval_fn<R: RangeRng>(self) -> impl Fn(&Operand, &mut R) -> Operand
+	fn eval_fn<R: RangeRng>(self) -> impl Fn(Operand, &mut R) -> Operand
 	{
 		match self.token
 		{
@@ -113,7 +134,8 @@ impl UnaryOperator
 		}
 	}
 
-	pub fn eval<R: RangeRng>(&self, operand: &Operand, rng: &mut R) -> Operand
+	#[allow(clippy::needless_pass_by_value)]
+	pub fn eval<R: RangeRng>(&self, operand: Operand, rng: &mut R) -> Operand
 	{
 		self.eval_fn()(operand, rng)
 	}
@@ -193,7 +215,7 @@ impl BinaryOperator
 {
 	fn eval_fn<R: RangeRng>(
 		self,
-	) -> impl Fn(&Operand, &Operand, &mut R) -> Result<Operand, FilterNumberError>
+	) -> impl Fn(Operand, Operand, &mut R) -> Result<Operand, OperatorError>
 	{
 		match self.token
 		{
@@ -215,12 +237,20 @@ impl BinaryOperator
 
 	pub fn eval<R: RangeRng>(
 		&self,
-		lhs: &Operand,
-		rhs: &Operand,
+		lhs: Operand,
+		rhs: Operand,
 		random: &mut R,
-	) -> Result<Operand, FilterNumberError>
+	) -> Result<Operand, BadOperandError>
 	{
-		self.eval_fn()(lhs, rhs, random)
+		self.eval_fn()(lhs, rhs, random).map_err(|err| match err
+		{
+			OperatorError::NumberComparisonLhs(lhs) => BadOperandError {
+				operator: Operator::from(*self),
+				argument_pos: 0,
+				expected: OperandType::Roll,
+				found: lhs,
+			},
+		})
 	}
 }
 impl From<OpToken> for BinaryOperator
@@ -250,6 +280,16 @@ impl From<OpToken> for BinaryOperator
 #[derive(Debug, Error, Clone, Copy)]
 #[error("Failed to convert {} to unary operator!", .0)]
 pub struct InvalidOperatorError(OpToken);
+
+#[derive(Debug, Error)]
+#[error("Operator ")]
+pub struct BadOperandError
+{
+	pub operator: Operator,
+	pub argument_pos: u8,
+	pub expected: OperandType,
+	pub found: Operand,
+}
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct BindingPower
