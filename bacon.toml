@@ -51,6 +51,10 @@ command = [
 	"clippy::explicit-iter-loop",
 	"-A",
 	"clippy::trivial-regex",
+	"-A",
+	"clippy::neg_cmp_op_on_partial_ord",
+	"-A",
+	"clippy::match-wildcard-for-single-variants",
 ]
 need_stdout = false
 

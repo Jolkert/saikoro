@@ -155,3 +155,40 @@ impl Default for RollId
 		Self::new()
 	}
 }
+
+#[cfg(test)]
+mod tests
+{
+	use super::*;
+	#[test]
+	fn remove()
+	{
+		let roll = Roll::new(5).remove();
+		assert_eq!(roll.original_value, 5);
+		assert!(roll.is_removed());
+	}
+
+	#[test]
+	fn remove_unless()
+	{
+		let should_retain = Roll::new(5).remove_unless(|it| it.original_value > 3);
+		let should_remove = Roll::new(2).remove_unless(|it| it.original_value > 3);
+
+		assert!(!should_retain.is_removed());
+		assert!(should_remove.is_removed());
+	}
+
+	#[test]
+	fn value()
+	{
+		let non_zero = Roll::new(3);
+		let removed_non_zero = Roll::new(2).remove();
+		let zero = Roll::new(0);
+		let removed_zero = Roll::new(0).remove();
+
+		assert!(non_zero.value().is_some_and(|val| val == 3));
+		assert!(removed_non_zero.value().is_none());
+		assert!(zero.value().is_some_and(|val| val == 0));
+		assert!(removed_zero.value().is_none());
+	}
+}

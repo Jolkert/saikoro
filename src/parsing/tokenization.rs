@@ -6,7 +6,7 @@ use lazy_regex::regex;
 use regex::Regex;
 use thiserror::Error;
 
-static TOKEN_TYPES: [TokenType; 5] = [
+static TOKEN_TYPES: &[TokenType] = &[
 	TokenType::Number,
 	TokenType::Operator,
 	TokenType::OpenDelimiter,
@@ -68,9 +68,6 @@ impl Display for TokenType
 pub struct TokenFlags(u8);
 impl TokenFlags
 {
-	pub const ANY: Self = Self(0b0001_1111);
-	pub const NONE: Self = Self(0b0000_0000);
-
 	pub fn has_set(self, token_type: TokenType) -> bool
 	{
 		let token_val = token_type as u8;
@@ -114,7 +111,7 @@ impl Display for TokenFlags
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub enum Token
+pub(crate) enum Token
 {
 	Number(f64),
 	Operator(OpToken),
@@ -149,12 +146,12 @@ impl From<OpToken> for Token
 	}
 }
 
-pub struct TokenStream<'a>
+struct BackingTokenStream<'a>
 {
 	str: &'a str,
 	cursor_index: usize,
 }
-impl<'a> TokenStream<'a>
+impl<'a> BackingTokenStream<'a>
 {
 	pub fn new(str: &'a str) -> Self
 	{
@@ -164,7 +161,7 @@ impl<'a> TokenStream<'a>
 		}
 	}
 }
-impl<'a> Iterator for TokenStream<'a>
+impl<'a> Iterator for BackingTokenStream<'a>
 {
 	type Item = Result<Token, TokenizationError>;
 	fn next(&mut self) -> Option<Self::Item>
@@ -212,17 +209,17 @@ impl<'a> Iterator for TokenStream<'a>
 // also borrow checker means i have to wrap it in a new type lol
 // -morgan 2024-01-02
 #[allow(clippy::option_option)] // I promise this makes sense :pensive: -morgan 2024-01-02
-pub struct PeekableTokenStream<'a>
+pub(crate) struct TokenStream<'a>
 {
-	token_stream: TokenStream<'a>,
+	token_stream: BackingTokenStream<'a>,
 	lookahead: Option<Option<Result<Token, TokenizationError>>>,
 }
-impl<'a> PeekableTokenStream<'a>
+impl<'a> TokenStream<'a>
 {
 	pub fn new(str: &'a str) -> Self
 	{
 		Self {
-			token_stream: TokenStream::new(str),
+			token_stream: BackingTokenStream::new(str),
 			lookahead: None,
 		}
 	}
@@ -234,16 +231,11 @@ impl<'a> PeekableTokenStream<'a>
 			.as_ref()
 	}
 
-	pub fn consume(&mut self) -> Result<(), TokenizationError>
-	{
-		self.next().transpose().map(|_| ())
-	}
-
-	pub fn consume_expecting<T>(&mut self, token_type: T) -> Result<(), TokenizationError>
+	pub fn expect<T>(&mut self, token_type: T) -> Result<Token, TokenizationError>
 	where
 		T: Into<TokenFlags>,
 	{
-		let token_flags: TokenFlags = token_type.into();
+		let token_flags = token_type.into();
 		let next = self.next().transpose()?;
 
 		next.map_or_else(
@@ -257,7 +249,7 @@ impl<'a> PeekableTokenStream<'a>
 			|token| {
 				if token_flags.has_set(token.token_type())
 				{
-					Ok(())
+					Ok(token)
 				}
 				else
 				{
@@ -270,8 +262,20 @@ impl<'a> PeekableTokenStream<'a>
 			},
 		)
 	}
+
+	pub fn consume(&mut self) -> Result<(), TokenizationError>
+	{
+		self.next().transpose().map(|_| ())
+	}
+
+	pub fn consume_expecting<T>(&mut self, token_type: T) -> Result<(), TokenizationError>
+	where
+		T: Into<TokenFlags>,
+	{
+		self.expect(token_type).map(|_| ())
+	}
 }
-impl<'a> Iterator for PeekableTokenStream<'a>
+impl<'a> Iterator for TokenStream<'a>
 {
 	type Item = Result<Token, TokenizationError>;
 	fn next(&mut self) -> Option<Self::Item>
@@ -307,4 +311,111 @@ pub struct UnexpectedTokenError
 {
 	pub found: Option<TokenType>,
 	pub expected: TokenFlags,
+}
+
+#[cfg(test)]
+mod tests
+{
+	pub use super::*;
+
+	#[test]
+	fn type_from_token()
+	{
+		assert_eq!(Token::Number(3.0).token_type(), TokenType::Number);
+		assert_eq!(
+			Token::Operator(OpToken::Plus).token_type(),
+			TokenType::Operator
+		);
+		assert_eq!(Token::OpenDelimiter.token_type(), TokenType::OpenDelimiter);
+		assert_eq!(
+			Token::CloseDelimiter.token_type(),
+			TokenType::CloseDelimiter
+		);
+	}
+
+	#[test]
+	fn flags_bitor()
+	{
+		assert_eq!(TokenFlags(0b0011), TokenType::Number | TokenType::Operator);
+
+		assert_eq!(
+			TokenFlags(0b0111),
+			TokenFlags(0b0011) | TokenType::OpenDelimiter
+		);
+
+		assert_eq!(TokenFlags(0b1111), TokenFlags(0b1100) | TokenFlags(0b0011));
+	}
+
+	mod stream
+	{
+		use super::*;
+
+		#[test]
+		fn whitespace()
+		{
+			assert_eq!(
+				TokenStream::new("1+2")
+					.collect::<Result<Vec<_>, _>>()
+					.unwrap(),
+				TokenStream::new("1 + 2")
+					.collect::<Result<Vec<_>, _>>()
+					.unwrap(),
+			);
+		}
+
+		#[test]
+		fn construction()
+		{
+			assert_eq!(
+				TokenStream::new("2+3-5")
+					.collect::<Result<Vec<_>, _>>()
+					.unwrap(),
+				vec![
+					Token::Number(2.0),
+					Token::Operator(OpToken::Plus),
+					Token::Number(3.0),
+					Token::Operator(OpToken::Minus),
+					Token::Number(5.0),
+				]
+			);
+		}
+
+		#[test]
+		fn peek()
+		{
+			let mut stream = TokenStream::new("2+3");
+			assert_eq!(
+				stream.peek().unwrap().to_owned().unwrap(),
+				Token::Number(2.0)
+			);
+
+			assert_eq!(stream.next().unwrap().unwrap(), Token::Number(2.0));
+			assert_eq!(
+				stream.next().unwrap().unwrap(),
+				Token::Operator(OpToken::Plus)
+			);
+		}
+
+		#[test]
+		fn consume_ok()
+		{
+			let mut stream = TokenStream::new("1");
+			assert!(stream.consume().is_ok());
+		}
+		#[test]
+		fn consume_err()
+		{
+			let mut stream = TokenStream::new("ɧ");
+			assert!(stream.consume().is_err());
+		}
+
+		#[test]
+		fn expecting()
+		{
+			let mut stream = TokenStream::new("3+5");
+			assert!(stream.consume_expecting(TokenType::Number).is_ok());
+			assert!(stream.consume_expecting(TokenType::Operator).is_ok());
+			assert!(stream.consume_expecting(TokenType::OpenDelimiter).is_err());
+		}
+	}
 }

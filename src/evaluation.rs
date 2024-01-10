@@ -101,3 +101,54 @@ pub enum EvaluationError
 	#[error("{}", .0)]
 	FilterNumber(#[from] BadOperandError),
 }
+
+#[cfg(test)]
+mod tests
+{
+	use super::*;
+	use crate::test_helpers::{assert_approx_eq, flip_result, RiggedRandom};
+
+	#[test]
+	fn deterministic_evaluation()
+	{
+		assert_approx_eq!(5.0, eval_expect("2 + 3").value);
+	}
+
+	#[test]
+	fn dice_evaluation()
+	{
+		let evaluation = eval_expect_rand("2d6", &mut RiggedRandom::new([3, 6]));
+		assert_approx_eq!(9.0, evaluation.value);
+		assert_eq!(
+			vec![3, 6],
+			evaluation
+				.ungrouped_rolls()
+				.map(|it| it.original_value)
+				.collect::<Vec<_>>()
+		);
+	}
+
+	#[test]
+	fn invalid_comparison()
+	{
+		assert!(matches!(
+			eval_expect_err("2 > 1"),
+			EvaluationError::FilterNumber(_)
+		));
+	}
+
+	fn eval_expect(input: &str) -> DiceEvaluation
+	{
+		evaluate(input).unwrap_or_else(|_| panic!("Could not evaluate `{input}`"))
+	}
+	fn eval_expect_rand<R: RangeRng>(input: &str, rand: &mut R) -> DiceEvaluation
+	{
+		eval_with_random(input, rand).unwrap_or_else(|_| panic!("Could not evaluate `{input}`"))
+	}
+
+	fn eval_expect_err(input: &str) -> EvaluationError
+	{
+		flip_result(evaluate(input))
+			.unwrap_or_else(|_| panic!("Unexpected successful evaluation of `{input}`"))
+	}
+}
