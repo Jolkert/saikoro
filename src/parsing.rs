@@ -62,6 +62,16 @@ fn parse_min_power(stream: &mut TokenStream, min_power: u8) -> Result<Node, Pars
 		let op = match peeked
 		{
 			Ok(Token::Operator(op)) => Ok(BinaryOperator::from(*op)),
+			Ok(Token::OpenDelimiter) =>
+			{
+				let rhs = parse_min_power(stream, 0)?;
+				lhs = Node::Binary {
+					operator: OpToken::Multiply.into(),
+					left: Box::new(lhs),
+					right: Box::new(rhs),
+				};
+				break;
+			}
 			Ok(Token::CloseDelimiter) => break,
 			result =>
 			{
@@ -195,6 +205,26 @@ mod tests
 			expect_err_tree("/4"),
 			ParsingError::InvalidOperator(_)
 		));
+	}
+
+	#[test]
+	fn unmatched_paren()
+	{
+		assert!(parse_tree_from("(2").is_err());
+	}
+
+	#[test]
+	fn juxtaposition_multiplication()
+	{
+		let two_by_three = Node::Binary {
+			operator: OpToken::Multiply.into(),
+			left: Box::new(Node::Leaf(2.0)),
+			right: Box::new(Node::Leaf(3.0)),
+		};
+
+		assert_eq!(two_by_three, expect_tree("2 * 3)"),);
+		assert_eq!(two_by_three, expect_tree("2(3))"),);
+		assert_eq!(two_by_three, expect_tree("(2)(3)"),);
 	}
 
 	fn expect_tree(input: &str) -> Node
