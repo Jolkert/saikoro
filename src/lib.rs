@@ -1,9 +1,28 @@
+pub mod errors;
 pub mod evaluation;
-pub mod parsing;
-pub use evaluation::{eval_with_random, evaluate};
+pub mod operator;
+mod parsing;
+mod tokenization;
 
+use errors::EvaluationError;
+use evaluation::DiceEvaluation;
 use rand::{Rng, RngCore};
 use std::ops::Range;
+use tokenization::TokenStream;
+
+pub fn evaluate(input: &str) -> Result<DiceEvaluation, EvaluationError>
+{
+	eval_with_rand(input, &mut rand::thread_rng())
+}
+pub fn eval_with_rand<R>(input: &str, rand: &mut R) -> Result<DiceEvaluation, EvaluationError>
+where
+	R: RangeRng,
+{
+	evaluation::evaluate_tree(
+		parsing::parse_tree_from(&mut TokenStream::new(input))?,
+		rand,
+	)
+}
 
 pub trait RangeRng
 {
@@ -21,7 +40,7 @@ impl<T: RngCore> RangeRng for T
 #[cfg(test)]
 pub(crate) mod test_helpers
 {
-	use crate::{evaluation::eval_with_random, RangeRng};
+	use crate::{eval_with_rand, RangeRng};
 	use std::collections::VecDeque;
 
 	pub struct RiggedRandom
@@ -80,7 +99,7 @@ pub(crate) mod test_helpers
 	#[test]
 	fn rigged_random_test()
 	{
-		let rolls = eval_with_random("3d6", &mut RiggedRandom::new([3, 5, 2])).unwrap();
+		let rolls = eval_with_rand("3d6", &mut RiggedRandom::new([3, 5, 2])).unwrap();
 
 		assert_approx_eq!(rolls.value, 10.0);
 		assert_eq!(

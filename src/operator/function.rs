@@ -1,4 +1,3 @@
-//
 #![allow(clippy::unnecessary_wraps)]
 
 use crate::{
@@ -8,15 +7,15 @@ use crate::{
 
 type OperatorResult = Result<Operand, OperatorError>;
 
-pub(crate) fn unary_plus<R: RangeRng>(operand: Operand, _random: &mut R) -> Operand
+pub fn unary_plus<R: RangeRng>(operand: Operand, _random: &mut R) -> Operand
 {
 	operand.into_number()
 }
-pub(crate) fn unary_minus<R: RangeRng>(operand: Operand, _random: &mut R) -> Operand
+pub fn unary_minus<R: RangeRng>(operand: Operand, _random: &mut R) -> Operand
 {
 	-operand
 }
-pub(crate) fn unary_dice<R: RangeRng>(operand: Operand, random: &mut R) -> Operand
+pub fn unary_dice<R: RangeRng>(operand: Operand, random: &mut R) -> Operand
 {
 	let faces = clamp_f64_to_u32(operand.into_value());
 	let roll = Roll::new(random.rng_range(0..faces) + 1);
@@ -24,31 +23,31 @@ pub(crate) fn unary_dice<R: RangeRng>(operand: Operand, random: &mut R) -> Opera
 	Operand::from(RollGroup::new(faces, [roll]))
 }
 
-pub(crate) fn add<R: RangeRng>(lhs: Operand, rhs: Operand, _random: &mut R) -> OperatorResult
+pub fn add<R: RangeRng>(lhs: Operand, rhs: Operand, _random: &mut R) -> OperatorResult
 {
 	Ok(lhs + rhs)
 }
-pub(crate) fn subtract<R: RangeRng>(lhs: Operand, rhs: Operand, _random: &mut R) -> OperatorResult
+pub fn subtract<R: RangeRng>(lhs: Operand, rhs: Operand, _random: &mut R) -> OperatorResult
 {
 	Ok(lhs - rhs)
 }
-pub(crate) fn multiply<R: RangeRng>(lhs: Operand, rhs: Operand, _random: &mut R) -> OperatorResult
+pub fn multiply<R: RangeRng>(lhs: Operand, rhs: Operand, _random: &mut R) -> OperatorResult
 {
 	Ok(lhs * rhs)
 }
-pub(crate) fn divide<R: RangeRng>(lhs: Operand, rhs: Operand, _random: &mut R) -> OperatorResult
+pub fn divide<R: RangeRng>(lhs: Operand, rhs: Operand, _random: &mut R) -> OperatorResult
 {
 	Ok(lhs / rhs)
 }
-pub(crate) fn modulo<R: RangeRng>(lhs: Operand, rhs: Operand, _random: &mut R) -> OperatorResult
+pub fn modulo<R: RangeRng>(lhs: Operand, rhs: Operand, _random: &mut R) -> OperatorResult
 {
 	Ok(lhs % rhs)
 }
-pub(crate) fn power<R: RangeRng>(lhs: Operand, rhs: Operand, _random: &mut R) -> OperatorResult
+pub fn power<R: RangeRng>(lhs: Operand, rhs: Operand, _random: &mut R) -> OperatorResult
 {
 	Ok(Operand::Number(lhs.into_value().powf(rhs.into_value())))
 }
-pub(crate) fn dice<R: RangeRng>(lhs: Operand, rhs: Operand, random: &mut R) -> OperatorResult
+pub fn dice<R: RangeRng>(lhs: Operand, rhs: Operand, random: &mut R) -> OperatorResult
 {
 	let mut roll_vec = Vec::<Roll>::new();
 	let faces = clamp_f64_to_u32(rhs.into_value());
@@ -62,7 +61,7 @@ pub(crate) fn dice<R: RangeRng>(lhs: Operand, rhs: Operand, random: &mut R) -> O
 }
 
 #[allow(clippy::needless_pass_by_value)] // i do actually want to consume this thanks -morgan 2024-01-08
-pub(crate) fn comparison<F>(lhs: Operand, rhs: Operand, predicate: F) -> OperatorResult
+pub fn comparison<F>(lhs: Operand, rhs: Operand, predicate: F) -> OperatorResult
 where
 	F: Fn(&Roll, &Operand) -> bool,
 {
@@ -82,36 +81,31 @@ where
 		Err(OperatorError::NumberComparisonLhs(lhs))
 	}
 }
-pub(crate) fn equal<R: RangeRng>(lhs: Operand, rhs: Operand, _rng: &mut R) -> OperatorResult
+pub fn equal<R: RangeRng>(lhs: Operand, rhs: Operand, _rng: &mut R) -> OperatorResult
 {
 	comparison(lhs, rhs, |l, r| {
 		(f64::from(l.original_value) - r.value()).abs() < f64::EPSILON
 	})
 }
-pub(crate) fn not_equal<R: RangeRng>(lhs: Operand, rhs: Operand, _rng: &mut R) -> OperatorResult
+pub fn not_equal<R: RangeRng>(lhs: Operand, rhs: Operand, _rng: &mut R) -> OperatorResult
 {
 	comparison(lhs, rhs, |l, r| {
 		(f64::from(l.original_value) - r.value()).abs() > f64::EPSILON
 	})
 }
-pub(crate) fn greater<R: RangeRng>(lhs: Operand, rhs: Operand, _rng: &mut R) -> OperatorResult
+pub fn greater<R: RangeRng>(lhs: Operand, rhs: Operand, _rng: &mut R) -> OperatorResult
 {
 	comparison(lhs, rhs, |l, r| f64::from(l.original_value) > r.value())
 }
-pub(crate) fn less<R: RangeRng>(lhs: Operand, rhs: Operand, _rng: &mut R) -> OperatorResult
+pub fn less<R: RangeRng>(lhs: Operand, rhs: Operand, _rng: &mut R) -> OperatorResult
 {
 	comparison(lhs, rhs, |l, r| f64::from(l.original_value) < r.value())
 }
-pub(crate) fn greater_or_equal<R: RangeRng>(
-	lhs: Operand,
-	rhs: Operand,
-	_rng: &mut R,
-) -> OperatorResult
+pub fn greater_or_equal<R: RangeRng>(lhs: Operand, rhs: Operand, _rng: &mut R) -> OperatorResult
 {
 	comparison(lhs, rhs, |l, r| f64::from(l.original_value) >= r.value())
 }
-pub(crate) fn less_or_equal<R: RangeRng>(lhs: Operand, rhs: Operand, _rng: &mut R)
-	-> OperatorResult
+pub fn less_or_equal<R: RangeRng>(lhs: Operand, rhs: Operand, _rng: &mut R) -> OperatorResult
 {
 	comparison(lhs, rhs, |l, r| f64::from(l.original_value) <= r.value())
 }
@@ -126,7 +120,7 @@ fn clamp_f64_to_u32(value: f64) -> u32
 // it's in an enum in case there's a need for more error types in the future
 // -morgan 2024-01-08
 #[derive(Debug)]
-pub(crate) enum OperatorError
+pub enum OperatorError
 {
 	NumberComparisonLhs(Operand),
 }

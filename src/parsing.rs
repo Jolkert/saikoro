@@ -1,12 +1,11 @@
-mod operators;
-pub mod tokenization;
-pub use operators::*;
-
-use thiserror::Error;
-use tokenization::{Token, TokenStream, TokenType, TokenizationError, UnexpectedTokenError};
+use crate::{
+	errors::{ParsingError, TokenizationError, UnaryWrongDirectionError, UnexpectedTokenError},
+	operator::{BinaryOperator, OpToken, UnaryDirection, UnaryOperator},
+	tokenization::{Token, TokenStream, TokenType},
+};
 
 #[derive(Debug, PartialEq)]
-pub(crate) enum Node
+pub enum Node
 {
 	Binary
 	{
@@ -22,9 +21,9 @@ pub(crate) enum Node
 	Leaf(f64),
 }
 
-pub(crate) fn parse_tree_from(input: &str) -> Result<Node, ParsingError>
+pub fn parse_tree_from(stream: &mut TokenStream) -> Result<Node, ParsingError>
 {
-	parse_min_power(&mut TokenStream::new(input), 0)
+	parse_min_power(stream, 0)
 }
 fn parse_min_power(stream: &mut TokenStream, min_power: u8) -> Result<Node, ParsingError>
 {
@@ -101,33 +100,11 @@ fn parse_min_power(stream: &mut TokenStream, min_power: u8) -> Result<Node, Pars
 	Ok(lhs)
 }
 
-#[derive(Debug, Error, Clone, Copy)]
-pub enum ParsingError
-{
-	#[error("{}", .0)]
-	Tokenization(#[from] TokenizationError),
-	#[error("{}", .0)]
-	InvalidOperator(#[from] InvalidOperatorError),
-	#[error("{}", .0)]
-	UnaryWrongDirection(#[from] UnaryWrongDirectionError),
-}
-
-// this actually shouldn't be possible at the moment? at least not until there's a postfix operator
-// covering future bases isnt a bad idea though cause ! will probably come at some point
-// morgan 2024-01-10
-#[derive(Debug, Error, Clone, Copy)]
-#[error("Expected {} operator, found {:?}", .expected_direction, .operator)]
-pub struct UnaryWrongDirectionError
-{
-	pub operator: UnaryOperator,
-	pub expected_direction: UnaryDirection,
-}
-
 #[cfg(test)]
 mod tests
 {
 	use super::*;
-	use crate::test_helpers::flip_result;
+	use crate::{test_helpers::flip_result, tokenization::TokenStream};
 
 	#[test]
 	fn single_token()
@@ -210,7 +187,7 @@ mod tests
 	#[test]
 	fn unmatched_paren()
 	{
-		assert!(parse_tree_from("(2").is_err());
+		assert!(parse_tree_from(&mut TokenStream::new("(2")).is_err());
 	}
 
 	#[test]
@@ -229,11 +206,12 @@ mod tests
 
 	fn expect_tree(input: &str) -> Node
 	{
-		parse_tree_from(input).unwrap_or_else(|_| panic!("Could not parse `{input}`"))
+		parse_tree_from(&mut TokenStream::new(input))
+			.unwrap_or_else(|_| panic!("Could not parse `{input}`"))
 	}
 	fn expect_err_tree(input: &str) -> ParsingError
 	{
-		flip_result(parse_tree_from(input))
+		flip_result(parse_tree_from(&mut TokenStream::new(input)))
 			.unwrap_or_else(|_| panic!("Unexpected successful parse of `{input}`"))
 	}
 }

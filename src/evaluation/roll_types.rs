@@ -1,3 +1,4 @@
+// TODO: i want to move this out of evaluation, but im not entirely sure where to put it -morgan 2024-01-10
 use std::{cmp::Ordering, fmt::Display};
 
 #[derive(Debug, Clone)]
@@ -190,5 +191,35 @@ mod tests
 		assert!(removed_non_zero.value().is_none());
 		assert!(zero.value().is_some_and(|val| val == 0));
 		assert!(removed_zero.value().is_none());
+	}
+}
+
+#[derive(Debug)]
+pub struct DiceEvaluation
+{
+	pub value: f64,
+	pub roll_groups: Box<[RollGroup]>,
+}
+impl DiceEvaluation
+{
+	pub fn ungrouped_rolls(&self) -> impl Iterator<Item = &Roll>
+	{
+		self.roll_groups.iter().flat_map(RollGroup::iter)
+	}
+}
+impl Display for DiceEvaluation
+{
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result
+	{
+		write!(
+			f,
+			"Total: {} [{}]",
+			self.value,
+			self.roll_groups
+				.iter()
+				.map(ToString::to_string)
+				.collect::<Vec<_>>()
+				.join(", ")
+		)
 	}
 }
