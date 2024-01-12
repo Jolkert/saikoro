@@ -1,3 +1,5 @@
+#![allow(missing_docs)]
+
 mod evaluation_error;
 mod parse_error;
 mod tokenization_error;

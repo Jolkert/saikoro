@@ -1,10 +1,12 @@
+//! Types used in the evaluation of dice expressions
+
 mod operand;
 mod roll_types;
 
 pub use operand::*;
 pub use roll_types::*;
 
-use crate::{errors::EvaluationError, parsing::Node, RangeRng};
+use crate::{error::EvaluationError, parsing::Node, RangeRng};
 use std::collections::HashMap;
 
 pub(super) fn evaluate_tree<R>(

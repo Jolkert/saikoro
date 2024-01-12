@@ -3,16 +3,17 @@ use super::{
 	OpToken, Operator,
 };
 use crate::{
-	errors::BadOperandError,
+	error::BadOperandError,
 	evaluation::{Operand, OperandType},
 	RangeRng,
 };
 
+/// Represents an operator which takes two [`Operand`]s as its arguments
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct BinaryOperator
 {
 	pub token: OpToken, // if we add an operator that cant be binary, we have to change this -morgan 2024-01-04
-	pub binding_power: BindingPower,
+	pub(crate) binding_power: BindingPower,
 }
 impl BinaryOperator
 {
@@ -38,6 +39,21 @@ impl BinaryOperator
 		}
 	}
 
+	/// Evaluates the given [`Operand`]s over the operator's evaluation function using the provided
+	/// [`RangeRng`] where applicable
+	/// # Examples
+	/// ```rust
+	/// # use saikoro::{error::BadOperandError, evaluation::Operand, operator::{BinaryOperator, OpToken}};
+	/// # fn main() -> Result<(), BadOperandError> {
+	/// let add = BinaryOperator::from(OpToken::Plus);
+	/// // Passing a RangeRng is required even when it isn't used
+	/// let result = add.eval(Operand::Number(1.0), Operand::Number(2.0), &mut rand::thread_rng())?;
+	/// assert_eq!(result, Operand::Number(3.0));
+	/// # Ok(())}
+	/// ```
+	/// # Errors
+	/// Returns an error variant if either of the operands is invalid for the operator (e.g. using
+	/// a [`Number`][`Operand::Number`] variant as the left-hand side of a comparison filter operator)
 	pub fn eval<R: RangeRng>(
 		&self,
 		lhs: Operand,
@@ -80,8 +96,10 @@ impl From<OpToken> for BinaryOperator
 	}
 }
 
+// Not redundant because it gets re-exported in saikoro::operator -morgan 2024-01-12
+#[allow(clippy::redundant_pub_crate)]
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
-pub struct BindingPower
+pub(crate) struct BindingPower
 {
 	pub left: u8,
 	pub right: u8,

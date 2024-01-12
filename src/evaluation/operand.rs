@@ -1,13 +1,30 @@
 use super::{RollGroup, RollId};
-use std::ops;
+use std::{fmt::Display, ops};
 
+/// An enum representing the two variants of [`Operand`]
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum OperandType
 {
 	Number,
 	Roll,
 }
+impl Display for OperandType
+{
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result
+	{
+		write!(
+			f,
+			"{}",
+			match self
+			{
+				Self::Number => "Number",
+				Self::Roll => "Roll",
+			}
+		)
+	}
+}
 
+/// An enum corresponding to the two types of operands that can be used as arguments in operator functions
 #[derive(Debug, PartialEq, PartialOrd)]
 pub enum Operand
 {
@@ -20,6 +37,14 @@ pub enum Operand
 }
 impl Operand
 {
+	/// Returns [`OperandType::Number`] if the [`Operand`] is a [`Number`][`Operand::Number`] variant,
+	/// and [`OperandType::Roll`] if the [`Operand`] is a [`Roll`][`Operand::Roll`] variant
+	/// # Examples
+	/// ```rust
+	/// # use saikoro::evaluation::{Operand, OperandType};
+	/// let operand = Operand::Number(5.0);
+	/// assert_eq!(operand.operand_type(), OperandType::Number)
+	/// ```
 	pub fn operand_type(&self) -> OperandType
 	{
 		match self
@@ -29,6 +54,17 @@ impl Operand
 		}
 	}
 
+	/// Returns the numerical value of the [`Operand`]. This is the underlying [`f64`] of a
+	/// [`Number`][`Operand::Number`] variant or the total of a [`Roll`][`Operand::Roll`] variant
+	/// # Examples
+	/// ```rust
+	/// # use saikoro::evaluation::{Operand, Roll, RollGroup};
+	/// let number = Operand::Number(3.0);
+	/// assert_eq!(number.value(), 3.0);
+	///
+	/// let roll = Operand::from(RollGroup::new(6, [Roll::new(5), Roll::new(6)]));
+	/// assert_eq!(roll.value(), 11.0);
+	/// ```
 	pub fn value(&self) -> f64
 	{
 		match self
@@ -37,6 +73,9 @@ impl Operand
 			Self::Roll { data, .. } => f64::from(data.total()),
 		}
 	}
+
+	/// The same as [`value`][`Operand::value``], but consumes `self`  
+	/// (see [`value`][`Operand::value`] for details)
 	pub fn into_value(self) -> f64
 	{
 		match self
@@ -46,17 +85,43 @@ impl Operand
 		}
 	}
 
+	/// Returns a new [`Number`][`Operand::Number`] variant with with the [`value`][`Operand::value`]
+	/// of `self`
+	/// # Examples
+	/// ```rust
+	/// # use saikoro::evaluation::{Operand, Roll, RollGroup};
+	/// let operand = Operand::from(RollGroup::new(6, [Roll::new(4), Roll::new(2)]));
+	/// assert_eq!(operand.to_number(), Operand::Number(6.0));
+	/// ```
 	#[must_use]
 	pub fn to_number(&self) -> Self
 	{
 		Self::Number(self.value())
 	}
+
+	/// The same as [`to_number`][`Operand::to_number``], but consumes `self`  
+	/// (see [`to_number`][`Operand::to_number`] for details)
 	#[must_use]
 	pub fn into_number(self) -> Self
 	{
 		Self::Number(self.into_value())
 	}
 
+	/// Returns whether or not the two values are within [`f64::EPSILON`] of one another
+	/// # Examples
+	/// ```rust
+	/// # use saikoro::evaluation::Operand;
+	/// // floating point arithmetic means that 0.1 + 0.2 != 0.3
+	/// assert_ne!(0.1 + 0.2, 0.3);
+	///
+	/// let sum = Operand::Number(0.1) + Operand::Number(0.2);
+	///
+	/// // by extension, Operand::Number(0.1) + Operand::Number(0.2) != Operand::Number(0.3)
+	/// assert_ne!(sum, Operand::Number(0.3));
+	///
+	/// // however, approx_eq will return true, as they are within f64::EPSILON distance of one another
+	/// assert!(sum.approx_eq(&Operand::Number(0.3)));
+	/// ```
 	pub fn approx_eq(&self, rhs: &Self) -> bool
 	{
 		f64::abs(self.value() - rhs.value()) < f64::EPSILON

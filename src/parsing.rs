@@ -1,5 +1,5 @@
 use crate::{
-	errors::{ParsingError, TokenizationError, UnaryWrongDirectionError, UnexpectedTokenError},
+	error::{ParsingError, TokenizationError, UnaryWrongDirectionError, UnexpectedTokenError},
 	operator::{BinaryOperator, OpToken, UnaryDirection, UnaryOperator},
 	tokenization::{Token, TokenStream, TokenType},
 };

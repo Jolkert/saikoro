@@ -1,3 +1,5 @@
+//! Types which represent operators
+
 mod binary_op;
 pub(crate) mod function;
 mod unary_op;
@@ -8,6 +10,7 @@ pub use unary_op::*;
 use std::{fmt::Display, str::FromStr};
 use thiserror::Error;
 
+/// An enum representing a token which corresponds to an operator
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum OpToken
 {
@@ -77,6 +80,7 @@ impl Display for OpToken
 	}
 }
 
+/// An error to be returned when failing to parse an operator
 #[derive(Debug, Error)]
 #[error("Unrecognized operator: {}", .operator)]
 pub struct ParseOperatorError
@@ -94,6 +98,7 @@ impl From<&str> for ParseOperatorError
 	}
 }
 
+/// An enum representing either a [`UnaryOperator`] or a [`BinaryOperator`]
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Operator
 {

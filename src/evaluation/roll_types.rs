@@ -1,6 +1,7 @@
 // TODO: i want to move this out of evaluation, but im not entirely sure where to put it -morgan 2024-01-10
 use std::{cmp::Ordering, fmt::Display};
 
+/// A group of [`Roll`]s and the number of faces on the dice they were originally rolled from
 #[derive(Debug, Clone)]
 pub struct RollGroup
 {
@@ -9,6 +10,8 @@ pub struct RollGroup
 }
 impl RollGroup
 {
+	/// Creates a new [`RollGroup`] given the provided number of dice faces, and a collection
+	/// of individual roll values
 	pub fn new<I>(faces: u32, rolls: I) -> Self
 	where
 		I: IntoIterator<Item = Roll>,
@@ -18,6 +21,19 @@ impl RollGroup
 			faces,
 		}
 	}
+
+	/// Gets the sum of all [`Roll`]s in the `self` [`RollGroup`], ignoring all [`Roll`]s whose
+	/// values were filtered out. Returns 0 for an empty [`RollGroup`], or one where every [`Roll`]
+	/// has been filtered out
+	/// # Examples
+	/// ```rust
+	/// # use saikoro::evaluation::{Roll, RollGroup};
+	/// let roll_group = RollGroup::new(6, [5, 3, 1].map(Roll::new));
+	/// assert_eq!(roll_group.total(), 9);
+	///
+	/// let roll_group = RollGroup::new(6, [Roll::new(5), Roll::new(3).remove(), Roll::new(1)]);
+	/// assert_eq!(roll_group.total(), 6);
+	/// ```
 	pub fn total(&self) -> u32
 	{
 		self.rolls
@@ -26,14 +42,41 @@ impl RollGroup
 			.map(|it| it.original_value)
 			.sum::<u32>()
 	}
+
+	/// Returns the number of elements in the [`RollGroup`]
+	/// # Examples
+	/// ```rust
+	/// # use saikoro::evaluation::{Roll, RollGroup};
+	/// let roll_group = RollGroup::new(6, [4, 6, 1, 2].map(Roll::new));
+	/// assert_eq!(roll_group.len(), 4);
+	/// ```
 	pub fn len(&self) -> usize
 	{
 		self.rolls.len()
 	}
+
+	/// Returns `true` if the [`RollGroup`] has a length of 0
+	/// # Examples
+	/// ```rust
+	/// # use saikoro::evaluation::{Roll, RollGroup};
+	/// let roll_group = RollGroup::new(6, [4, 6, 1, 2].map(Roll::new));
+	/// assert!(!roll_group.is_empty());
+	/// ```
 	pub fn is_empty(&self) -> bool
 	{
 		self.len() == 0
 	}
+
+	/// # Examples
+	/// ```rust
+	/// # use saikoro::evaluation::{Roll, RollGroup};
+	/// let roll_group = &RollGroup::new(6, [4, 1, 2].map(Roll::new));
+	/// let mut iter = roll_group.iter();
+	/// assert_eq!(iter.next(), Some(&Roll::new(4)));
+	/// assert_eq!(iter.next(), Some(&Roll::new(1)));
+	/// assert_eq!(iter.next(), Some(&Roll::new(2)));
+	/// assert_eq!(iter.next(), None);
+	/// ```
 	pub fn iter(&self) -> std::slice::Iter<Roll>
 	{
 		self.rolls.iter()
@@ -81,6 +124,8 @@ impl PartialOrd for RollGroup
 	}
 }
 
+/// A value representing an individual die roll with information on whether or not it should count
+/// toward the value of its parent [`RollGroup`]
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
 pub struct Roll
 {
@@ -89,6 +134,8 @@ pub struct Roll
 }
 impl Roll
 {
+	/// Creates a new [`Roll`] where the original value is the given [`u32`] and is considered
+	/// "not removed" (i.e. its value counts toward its parent [`RollGroup`])
 	pub fn new(value: u32) -> Self
 	{
 		Self {
@@ -97,16 +144,30 @@ impl Roll
 		}
 	}
 
+	/// Gets the value of the [`Roll`] as an [`Option`]. Returns [`None`] if the [`Roll`] has been
+	/// removed, and otherwise returns the underlying value as [`Some(u32)`]
+	/// # Examples
+	/// ```rust
+	/// # use saikoro::evaluation::Roll;
+	/// let roll = Roll::new(15);
+	/// assert!(roll.value().is_some_and(|val| val == 15));
+	///
+	/// let removed = roll.remove();
+	/// assert!(removed.value().is_none());
+	/// ```
 	pub fn value(&self) -> Option<u32>
 	{
 		(!self.removed).then_some(self.original_value)
 	}
 
+	/// Returns a [`bool`] representing whether or not the [`Roll`] is removed (i.e. its value
+	/// was filtered out and should not count toward the total value)
 	pub fn is_removed(&self) -> bool
 	{
 		self.removed
 	}
 
+	/// Sets `self` to be removed, and returns it back to the caller
 	#[must_use]
 	pub fn remove(self) -> Self
 	{
@@ -116,6 +177,8 @@ impl Roll
 		}
 	}
 
+	/// calls [`remove`][`Roll::remove`] on `self` if it does **not** match the predicate, otherwise
+	/// it simply acts as a no-op and returns `self` back
 	#[must_use]
 	pub fn remove_unless<F>(self, predicate: F) -> Self
 	where
@@ -140,10 +203,15 @@ impl Display for Roll
 	}
 }
 
+/// A value that can be used to uniquely identify a roll.
+/// # Technical Details
+/// Currently, [`RollId`] acts simply as a wrapper around a randomly generated [`u64`], and
+/// *technically* has no guarantees against collisions, though they should be rare.
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Hash)]
 pub struct RollId(u64);
 impl RollId
 {
+	/// Generates a new [`RollId`] with a random value
 	pub fn new() -> Self
 	{
 		Self(rand::random())

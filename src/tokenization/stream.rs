@@ -1,6 +1,6 @@
 use super::{Token, TokenFlags, TokenType, TOKEN_TYPES};
 use crate::{
-	errors::{TokenizationError, UnexpectedTokenError, UnknownTokenError},
+	error::{TokenizationError, UnexpectedTokenError, UnknownTokenError},
 	operator::OpToken,
 };
 
@@ -29,7 +29,7 @@ impl<'a> Iterator for BackingTokenStream<'a>
 			return None;
 		}
 
-		for token_type in TOKEN_TYPES.iter()
+		for token_type in TOKEN_TYPES
 		{
 			if let Some(mtch) = token_type.regex().find_at(self.str, self.cursor_index)
 			{

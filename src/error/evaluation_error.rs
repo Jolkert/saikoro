@@ -5,6 +5,8 @@ use crate::{
 };
 use thiserror::Error;
 
+/// An error representing any error that can occur while evaluating a dice string (including any
+/// errors which can occur during parsing or tokenization)
 #[derive(Debug, Error)]
 pub enum EvaluationError
 {
@@ -16,8 +18,9 @@ pub enum EvaluationError
 	FilterNumber(#[from] BadOperandError),
 }
 
+/// An error representing an operand of the wrong type found while evauating an operator expression
 #[derive(Debug, Error)]
-#[error("Operator ")]
+#[error("Operator {:?} expected an operand of type {}, but found {:?} as argument {}", .operator, expected, .found, argument_pos)]
 pub struct BadOperandError
 {
 	pub operator: Operator,
