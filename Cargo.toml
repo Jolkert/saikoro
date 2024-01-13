@@ -2,11 +2,13 @@
 name = "saikoro"
 version = "1.0.0"
 authors = ["Morgan Bauer"]
+homepage = "https://jolkert.dev/saikoro"
 edition = "2021"
 description = "Parser and evaluator for doing math with dice notation expressions"
 repository = "https://github.com/Jolkert/saikoro"
 license = "MIT OR Apache-2.0"
 keywords = ["dice", "parser", "math"]
+categories = ["mathematics", "parser-implementations"]
 exclude = ["bacon.toml", ".vscode/", "CHANGELOG.md"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
