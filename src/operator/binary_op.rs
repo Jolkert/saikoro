@@ -83,13 +83,13 @@ impl From<OpToken> for BinaryOperator
 			{
 				Op::Plus | Op::Minus => BindingPower::new(1, 2),
 				Op::Multiply | Op::Divide | Op::Modulus => BindingPower::new(3, 4),
+				Op::Power => BindingPower::new(6, 5),
 				Op::Equals
 				| Op::NotEquals
 				| Op::GreaterThan
 				| Op::LessThan
 				| Op::GreaterOrEqual
-				| Op::LessOrEqual => BindingPower::new(5, 6),
-				Op::Power => BindingPower::new(10, 9),
+				| Op::LessOrEqual => BindingPower::new(9, 10),
 				Op::Dice => BindingPower::new(11, 12),
 			},
 		}
