@@ -7,7 +7,7 @@ description = "Parser and evaluator for doing math with dice notation expression
 repository = "https://github.com/Jolkert/saikoro"
 license = "MIT OR Apache-2.0"
 keywords = ["dice", "parser", "math"]
-exclude = ["bacon.toml", ".vscode/"]
+exclude = ["bacon.toml", ".vscode/", "CHANGELOG.md"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
