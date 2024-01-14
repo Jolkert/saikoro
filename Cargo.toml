@@ -1,6 +1,6 @@
 [package]
 name = "saikoro"
-version = "1.0.0"
+version = "1.1.0"
 authors = ["Morgan Bauer"]
 homepage = "https://jolkert.dev/saikoro"
 edition = "2021"
