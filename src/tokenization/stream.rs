@@ -1,7 +1,7 @@
 use super::{Token, TokenFlags, TokenType, TOKEN_TYPES};
 use crate::{
 	error::{TokenizationError, UnexpectedTokenError, UnknownTokenError},
-	operator::OpToken,
+	operator::CompOperator,
 };
 
 struct BackingTokenStream<'a>
@@ -41,12 +41,13 @@ impl<'a> Iterator for BackingTokenStream<'a>
 				self.cursor_index += mtch.as_str().len();
 				return match token_type
 				{
-					TokenType::Number =>
+					TokenType::Number => Some(Ok(Token::Number(mtch.as_str().parse().unwrap()))),
+					TokenType::Operator =>
 					{
-						Some(Ok(Token::Number(mtch.as_str().parse::<f64>().unwrap())))
+						Some(Ok(Token::Operator(mtch.as_str().parse().unwrap())))
 					}
-					TokenType::Operator => Some(Ok(Token::Operator(
-						mtch.as_str().parse::<OpToken>().unwrap(),
+					TokenType::ComparisonOperator => Some(Ok(Token::ComparisonOperator(
+						mtch.as_str().parse::<CompOperator>().unwrap(),
 					))),
 					TokenType::OpenDelimiter => Some(Ok(Token::OpenDelimiter)),
 					TokenType::CloseDelimiter => Some(Ok(Token::CloseDelimiter)),
@@ -150,6 +151,7 @@ impl<'a> Iterator for TokenStream<'a>
 mod tests
 {
 	use super::*;
+	use crate::operator::OpToken;
 
 	#[test]
 	fn whitespace()

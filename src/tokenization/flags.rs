@@ -64,11 +64,14 @@ mod tests
 	#[test]
 	fn bit_or()
 	{
-		assert_eq!(TokenFlags(0b0011), TokenType::Number | TokenType::Operator);
+		assert_eq!(
+			TokenFlags(0b0_0011),
+			TokenType::Number | TokenType::Operator
+		);
 
 		assert_eq!(
-			TokenFlags(0b0111),
-			TokenFlags(0b0011) | TokenType::OpenDelimiter
+			TokenFlags(0b0_1011),
+			TokenFlags(0b0_0011) | TokenType::OpenDelimiter
 		);
 
 		assert_eq!(TokenFlags(0b1111), TokenFlags(0b1100) | TokenFlags(0b0011));

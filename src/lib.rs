@@ -1,7 +1,7 @@
 //! A parser and evaluator for dice notation expression
 //! # Basic Usage example
 //! ```rust
-//! # fn main() -> Result<(), saikoro::error::EvaluationError> {
+//! # fn main() -> Result<(), saikoro::error::ParsingError> {
 //! // roll for fireball damage
 //! let damage = saikoro::evaluate("8d6")?;
 //! println!("Fireball deals {} fire damage", damage.value);
@@ -14,7 +14,7 @@ pub mod operator;
 mod parsing;
 mod tokenization;
 
-use error::EvaluationError;
+use error::ParsingError;
 use evaluation::DiceEvaluation;
 use rand::{Rng, RngCore, SeedableRng};
 use std::ops::Range;
@@ -25,7 +25,7 @@ use tokenization::TokenStream;
 /// as the second parameter
 /// # Examples
 /// ```rust
-/// # fn main() -> Result<(), saikoro::error::EvaluationError> {
+/// # fn main() -> Result<(), saikoro::error::ParsingError> {
 /// let evaluation = saikoro::evaluate("2d6")?;
 /// let final_value = evaluation.value;
 /// // the result of rolling 2d6 will be between 2 and 12
@@ -36,14 +36,14 @@ use tokenization::TokenStream;
 /// # Errors
 /// An error variant will be returned if the expression is unable to be parsed, or the evaluation function
 /// produces an error
-pub fn evaluate(input: &str) -> Result<DiceEvaluation, EvaluationError>
+pub fn evaluate(input: &str) -> Result<DiceEvaluation, ParsingError>
 {
 	eval_with_rand(input, &mut rand::thread_rng())
 }
 
 /// A utility wrapper function for seeding a dice roll with the given u64 as the seed
 /// (see [`saikoro::eval_with_rand`][`eval_with_rand`] for more information)
-pub fn eval_with_seed(input: &str, seed: u64) -> Result<DiceEvaluation, EvaluationError>
+pub fn eval_with_seed(input: &str, seed: u64) -> Result<DiceEvaluation, ParsingError>
 {
 	let mut seeded_random = rand::rngs::StdRng::seed_from_u64(seed);
 	eval_with_rand(input, &mut seeded_random)
@@ -53,7 +53,7 @@ pub fn eval_with_seed(input: &str, seed: u64) -> Result<DiceEvaluation, Evaluati
 /// evaluated with the given [`RangeRng`]
 /// # Examples
 /// ```rust
-/// # fn main() -> Result<(), saikoro::error::EvaluationError>
+/// # fn main() -> Result<(), saikoro::error::ParsingError>
 /// # {
 /// use rand::{rngs::StdRng, SeedableRng};
 ///
@@ -76,7 +76,7 @@ pub fn eval_with_seed(input: &str, seed: u64) -> Result<DiceEvaluation, Evaluati
 /// # See Also
 /// For simply seeding a roll with a u64 seed, see [`saikoro::eval_with_seed`][`eval_with_seed`]
 /// [`saikoro::RangeRng`][`RangeRng`]
-pub fn eval_with_rand<R>(input: &str, rand: &mut R) -> Result<DiceEvaluation, EvaluationError>
+pub fn eval_with_rand<R>(input: &str, rand: &mut R) -> Result<DiceEvaluation, ParsingError>
 where
 	R: RangeRng,
 {

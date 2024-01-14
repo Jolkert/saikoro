@@ -4,7 +4,7 @@ mod stream;
 pub use flags::*;
 pub use stream::*;
 
-use crate::operator::OpToken;
+use crate::operator::{CompOperator, OpToken};
 use lazy_regex::regex;
 use regex::Regex;
 use std::fmt::Display;
@@ -12,6 +12,7 @@ use std::fmt::Display;
 static TOKEN_TYPES: &[TokenType] = &[
 	TokenType::Number,
 	TokenType::Operator,
+	TokenType::ComparisonOperator,
 	TokenType::OpenDelimiter,
 	TokenType::CloseDelimiter,
 	TokenType::Whitespace,
@@ -21,9 +22,10 @@ pub enum TokenType
 {
 	Number = 1 << 0,
 	Operator = 1 << 1,
-	OpenDelimiter = 1 << 2,
-	CloseDelimiter = 1 << 3,
-	Whitespace = 1 << 4,
+	ComparisonOperator = 1 << 2,
+	OpenDelimiter = 1 << 3,
+	CloseDelimiter = 1 << 4,
+	Whitespace = 1 << 5,
 }
 impl TokenType
 {
@@ -32,7 +34,8 @@ impl TokenType
 		match self
 		{
 			Self::Number => regex!(r"\d+(\.\d+)?"),
-			Self::Operator => regex!(r"[\+\-\*\/%^dD]|[=!<>]=|>|<"),
+			Self::Operator => regex!(r"[\+\-\*\/%^dD]"),
+			Self::ComparisonOperator => regex!(r"[=!<>]=|>|<"),
 			Self::OpenDelimiter => regex!(r"\("),
 			Self::CloseDelimiter => regex!(r"\)"),
 			Self::Whitespace => regex!(r"\s+"),
@@ -45,6 +48,7 @@ impl TokenType
 		{
 			Self::Number => "Number",
 			Self::Operator => "Operator",
+			Self::ComparisonOperator => "ComparisonOperator",
 			Self::OpenDelimiter => "OpenDelim",
 			Self::CloseDelimiter => "CloseDelim",
 			Self::Whitespace => "Whitespace",
@@ -65,6 +69,7 @@ pub enum Token
 {
 	Number(f64),
 	Operator(OpToken),
+	ComparisonOperator(CompOperator),
 	OpenDelimiter,
 	CloseDelimiter,
 }
@@ -76,6 +81,7 @@ impl Token
 		{
 			Self::Number(_) => TokenType::Number,
 			Self::Operator(_) => TokenType::Operator,
+			Self::ComparisonOperator(_) => TokenType::ComparisonOperator,
 			Self::OpenDelimiter => TokenType::OpenDelimiter,
 			Self::CloseDelimiter => TokenType::CloseDelimiter,
 		}

@@ -1,5 +1,5 @@
 use super::TokenizationError;
-use crate::operator::{OpToken, UnaryDirection, UnaryOperator};
+use crate::operator::{CompOperator, OpToken, UnaryDirection, UnaryOperator};
 use thiserror::Error;
 
 /// An error representing any error that can occur while parsing a dice string (including any
@@ -13,6 +13,10 @@ pub enum ParsingError
 	InvalidOperator(#[from] InvalidOperatorError),
 	#[error("{}", .0)]
 	UnaryWrongDirection(#[from] UnaryWrongDirectionError),
+	#[error("{}", .0)]
+	UnmatchedCloseDelimiter(#[from] UnmatchedCloseDelimiterError),
+	#[error("{}", .0)]
+	UnmatchedComparison(#[from] UnmatchedComparisonError),
 }
 
 // this actually shouldn't be possible at the moment? at least not until there's a postfix operator
@@ -34,3 +38,13 @@ pub struct UnaryWrongDirectionError
 #[derive(Debug, Error, Clone, Copy)]
 #[error("Failed to convert {} to unary operator!", .0)]
 pub struct InvalidOperatorError(pub OpToken);
+
+/// An error representing a found closing parenthesis without a matching open parenthesis
+#[derive(Debug, Error, Clone, Copy)]
+#[error("Found closing parenthesis not matching any open!")]
+pub struct UnmatchedCloseDelimiterError;
+
+/// An error representing a found comparison operator without a matching dice operator
+#[derive(Debug, Error, Clone, Copy)]
+#[error("Found comparison operator `{}` without a matching dice operator!", .0)]
+pub struct UnmatchedComparisonError(pub CompOperator);

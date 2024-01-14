@@ -4,12 +4,6 @@ fn main()
 	match saikoro::evaluate(&input)
 	{
 		Ok(result) => println!("{result}"),
-		Err(_) => eprintln!("Could not parse input expression \"{input}\"!"),
-	};
-
-	match saikoro::evaluate("8d6")
-	{
-		Ok(roll) => println!("Fireball deals {} fire damage", roll.value),
-		Err(_) => println!("An error occured while parsing the input string!"),
+		Err(err) => eprintln!("Could not parse input expression \"{input}\"!\n{err}"),
 	}
 }

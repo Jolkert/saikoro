@@ -1,10 +1,12 @@
 //! Types which represent operators
 
 mod binary_op;
+mod comp_op;
 pub(crate) mod function;
 mod unary_op;
 
 pub use binary_op::*;
+pub use comp_op::*;
 pub use unary_op::*;
 
 use std::{fmt::Display, str::FromStr};
@@ -21,12 +23,6 @@ pub enum OpToken
 	Modulus,
 	Power,
 	Dice,
-	Equals,
-	NotEquals,
-	GreaterThan,
-	LessThan,
-	GreaterOrEqual,
-	LessOrEqual,
 }
 impl FromStr for OpToken
 {
@@ -43,13 +39,7 @@ impl FromStr for OpToken
 			"%" => Ok(Self::Modulus),
 			"^" => Ok(Self::Power),
 			"d" | "D" => Ok(Self::Dice),
-			"==" => Ok(Self::Equals),
-			"!=" => Ok(Self::NotEquals),
-			">" => Ok(Self::GreaterThan),
-			"<" => Ok(Self::LessThan),
-			">=" => Ok(Self::GreaterOrEqual),
-			"<=" => Ok(Self::LessOrEqual),
-			other => Err(ParseOperatorError::from(other)),
+			unrecognized => Err(ParseOperatorError::from(unrecognized)),
 		}
 	}
 }
@@ -69,12 +59,6 @@ impl Display for OpToken
 				Self::Modulus => "%",
 				Self::Power => "^",
 				Self::Dice => "d",
-				Self::Equals => "==",
-				Self::NotEquals => "!=",
-				Self::GreaterThan => ">",
-				Self::LessThan => "<",
-				Self::GreaterOrEqual => ">=",
-				Self::LessOrEqual => "<=",
 			}
 		)
 	}

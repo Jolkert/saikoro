@@ -1,11 +1,9 @@
-#![allow(clippy::unnecessary_wraps)]
-
+// i promise i want to consume all of these thanks -morgan 2024-01-14
+#![allow(clippy::needless_pass_by_value)]
 use crate::{
 	evaluation::{Operand, Roll, RollGroup},
 	RangeRng,
 };
-
-type OperatorResult = Result<Operand, OperatorError>;
 
 pub fn unary_plus<R: RangeRng>(operand: Operand, _random: &mut R) -> Operand
 {
@@ -23,91 +21,161 @@ pub fn unary_dice<R: RangeRng>(operand: Operand, random: &mut R) -> Operand
 	Operand::from(RollGroup::new(faces, [roll]))
 }
 
-pub fn add<R: RangeRng>(lhs: Operand, rhs: Operand, _random: &mut R) -> OperatorResult
+pub fn add<R: RangeRng>(lhs: Operand, rhs: Operand, _random: &mut R) -> Operand
 {
-	Ok(lhs + rhs)
+	lhs + rhs
 }
-pub fn subtract<R: RangeRng>(lhs: Operand, rhs: Operand, _random: &mut R) -> OperatorResult
+pub fn subtract<R: RangeRng>(lhs: Operand, rhs: Operand, _random: &mut R) -> Operand
 {
-	Ok(lhs - rhs)
+	lhs - rhs
 }
-pub fn multiply<R: RangeRng>(lhs: Operand, rhs: Operand, _random: &mut R) -> OperatorResult
+pub fn multiply<R: RangeRng>(lhs: Operand, rhs: Operand, _random: &mut R) -> Operand
 {
-	Ok(lhs * rhs)
+	lhs * rhs
 }
-pub fn divide<R: RangeRng>(lhs: Operand, rhs: Operand, _random: &mut R) -> OperatorResult
+pub fn divide<R: RangeRng>(lhs: Operand, rhs: Operand, _random: &mut R) -> Operand
 {
-	Ok(lhs / rhs)
+	lhs / rhs
 }
-pub fn modulo<R: RangeRng>(lhs: Operand, rhs: Operand, _random: &mut R) -> OperatorResult
+pub fn modulo<R: RangeRng>(lhs: Operand, rhs: Operand, _random: &mut R) -> Operand
 {
-	Ok(lhs % rhs)
+	lhs % rhs
 }
-pub fn power<R: RangeRng>(lhs: Operand, rhs: Operand, _random: &mut R) -> OperatorResult
+pub fn power<R: RangeRng>(lhs: Operand, rhs: Operand, _random: &mut R) -> Operand
 {
-	Ok(Operand::Number(lhs.into_value().powf(rhs.into_value())))
+	Operand::Number(lhs.into_value().powf(rhs.into_value()))
 }
-pub fn dice<R: RangeRng>(lhs: Operand, rhs: Operand, random: &mut R) -> OperatorResult
+pub fn dice<R: RangeRng>(lhs: Operand, rhs: Operand, random: &mut R) -> Operand
 {
-	let mut roll_vec = Vec::<Roll>::new();
-	let faces = clamp_f64_to_u32(rhs.into_value());
-
-	for _ in 0..(clamp_f64_to_u32(lhs.into_value()))
-	{
-		roll_vec.push(Roll::new(random.rng_range(0..faces) + 1));
-	}
-
-	Ok(Operand::from(RollGroup::new(faces, roll_vec)))
+	Operand::from(dice_roll(
+		clamp_f64_to_u32(lhs.value()),
+		clamp_f64_to_u32(rhs.value()),
+		random,
+	))
 }
 
-#[allow(clippy::needless_pass_by_value)] // i do actually want to consume this thanks -morgan 2024-01-08
-pub fn comparison<F>(lhs: Operand, rhs: Operand, predicate: F) -> OperatorResult
+pub fn eq_roll_comp<R: RangeRng>(
+	dice_lhs: Operand,
+	dice_rhs: Operand,
+	compare_to: Operand,
+	random: &mut R,
+) -> Operand
+{
+	Operand::from(roll_compare(
+		clamp_f64_to_u32(dice_lhs.value()),
+		clamp_f64_to_u32(dice_rhs.value()),
+		compare_to,
+		|l, r| f64::from(l.original_value).approx_eq(r.value()),
+		random,
+	))
+}
+pub fn ne_roll_comp<R: RangeRng>(
+	dice_lhs: Operand,
+	dice_rhs: Operand,
+	compare_to: Operand,
+	random: &mut R,
+) -> Operand
+{
+	Operand::from(roll_compare(
+		clamp_f64_to_u32(dice_lhs.value()),
+		clamp_f64_to_u32(dice_rhs.value()),
+		compare_to,
+		|l, r| !f64::from(l.original_value).approx_eq(r.value()),
+		random,
+	))
+}
+pub fn greater_roll_comp<R: RangeRng>(
+	dice_lhs: Operand,
+	dice_rhs: Operand,
+	compare_to: Operand,
+	random: &mut R,
+) -> Operand
+{
+	Operand::from(roll_compare(
+		clamp_f64_to_u32(dice_lhs.value()),
+		clamp_f64_to_u32(dice_rhs.value()),
+		compare_to,
+		|l, r| f64::from(l.original_value) > r.value(),
+		random,
+	))
+}
+pub fn less_roll_comp<R: RangeRng>(
+	dice_lhs: Operand,
+	dice_rhs: Operand,
+	compare_to: Operand,
+	random: &mut R,
+) -> Operand
+{
+	Operand::from(roll_compare(
+		clamp_f64_to_u32(dice_lhs.value()),
+		clamp_f64_to_u32(dice_rhs.value()),
+		compare_to,
+		|l, r| f64::from(l.original_value) < r.value(),
+		random,
+	))
+}
+pub fn greater_eq_roll_comp<R: RangeRng>(
+	dice_lhs: Operand,
+	dice_rhs: Operand,
+	compare_to: Operand,
+	random: &mut R,
+) -> Operand
+{
+	Operand::from(roll_compare(
+		clamp_f64_to_u32(dice_lhs.value()),
+		clamp_f64_to_u32(dice_rhs.value()),
+		compare_to,
+		|l, r| f64::from(l.original_value) >= r.value(),
+		random,
+	))
+}
+pub fn less_eq_roll_comp<R: RangeRng>(
+	dice_lhs: Operand,
+	dice_rhs: Operand,
+	compare_to: Operand,
+	random: &mut R,
+) -> Operand
+{
+	Operand::from(roll_compare(
+		clamp_f64_to_u32(dice_lhs.value()),
+		clamp_f64_to_u32(dice_rhs.value()),
+		compare_to,
+		|l, r| f64::from(l.original_value) <= r.value(),
+		random,
+	))
+}
+
+fn roll_compare<F, R>(
+	count: u32,
+	faces: u32,
+	rhs: Operand,
+	predicate: F,
+	random: &mut R,
+) -> RollGroup
+where
+	F: Fn(&Roll, &Operand) -> bool,
+	R: RangeRng,
+{
+	let roll = dice_roll(count, faces, random);
+	comparison(roll, rhs, predicate)
+}
+
+fn comparison<F>(lhs: RollGroup, rhs: Operand, predicate: F) -> RollGroup
 where
 	F: Fn(&Roll, &Operand) -> bool,
 {
-	if let Operand::Roll { id, data } = lhs
+	let mut lhs = lhs;
+	for roll in &mut lhs
 	{
-		Ok(Operand::Roll {
-			data: RollGroup::new(
-				data.faces,
-				data.iter()
-					.map(|roll| roll.remove_unless(|it| predicate(it, &rhs))),
-			),
-			id,
-		})
+		roll.remove_unless(|it| predicate(it, &rhs));
 	}
-	else
-	{
-		Err(OperatorError::NumberComparisonLhs(lhs))
-	}
+	lhs
 }
-pub fn equal<R: RangeRng>(lhs: Operand, rhs: Operand, _rng: &mut R) -> OperatorResult
+
+fn dice_roll<R: RangeRng>(count: u32, faces: u32, random: &mut R) -> RollGroup
 {
-	comparison(lhs, rhs, |l, r| {
-		(f64::from(l.original_value) - r.value()).abs() < f64::EPSILON
-	})
-}
-pub fn not_equal<R: RangeRng>(lhs: Operand, rhs: Operand, _rng: &mut R) -> OperatorResult
-{
-	comparison(lhs, rhs, |l, r| {
-		(f64::from(l.original_value) - r.value()).abs() > f64::EPSILON
-	})
-}
-pub fn greater<R: RangeRng>(lhs: Operand, rhs: Operand, _rng: &mut R) -> OperatorResult
-{
-	comparison(lhs, rhs, |l, r| f64::from(l.original_value) > r.value())
-}
-pub fn less<R: RangeRng>(lhs: Operand, rhs: Operand, _rng: &mut R) -> OperatorResult
-{
-	comparison(lhs, rhs, |l, r| f64::from(l.original_value) < r.value())
-}
-pub fn greater_or_equal<R: RangeRng>(lhs: Operand, rhs: Operand, _rng: &mut R) -> OperatorResult
-{
-	comparison(lhs, rhs, |l, r| f64::from(l.original_value) >= r.value())
-}
-pub fn less_or_equal<R: RangeRng>(lhs: Operand, rhs: Operand, _rng: &mut R) -> OperatorResult
-{
-	comparison(lhs, rhs, |l, r| f64::from(l.original_value) <= r.value())
+	let values = (0..count).map(|_| Roll::new(random.rng_range(0..faces) + 1));
+	RollGroup::new(faces, values)
 }
 
 #[allow(clippy::cast_sign_loss)]
@@ -116,22 +184,22 @@ fn clamp_f64_to_u32(value: f64) -> u32
 	value.clamp(f64::from(u32::MIN), f64::from(u32::MAX)) as u32
 }
 
-// don't keep this public, its for internal use only to bubble up to BinaryOperator::eval
-// it's in an enum in case there's a need for more error types in the future
-// -morgan 2024-01-08
-#[derive(Debug)]
-pub enum OperatorError
+trait ApproxEq
 {
-	NumberComparisonLhs(Operand),
+	fn approx_eq(self, rhs: Self) -> bool;
+}
+impl ApproxEq for f64
+{
+	fn approx_eq(self, rhs: Self) -> bool
+	{
+		Self::abs(self - rhs) < Self::EPSILON
+	}
 }
 
 #[cfg(test)]
 mod tests
 {
-	use crate::{
-		evaluation::{Operand, Roll, RollGroup},
-		test_helpers::RiggedRandom,
-	};
+	use crate::{evaluation::Operand, test_helpers::RiggedRandom};
 
 	#[test]
 	fn add()
@@ -141,7 +209,6 @@ mod tests
 			Operand::Number(3.0),
 			&mut rand::thread_rng(),
 		)
-		.unwrap()
 		.approx_eq(&Operand::Number(15.0)));
 	}
 	#[test]
@@ -152,7 +219,6 @@ mod tests
 			Operand::Number(3.0),
 			&mut rand::thread_rng(),
 		)
-		.unwrap()
 		.approx_eq(&Operand::Number(9.0)));
 	}
 	#[test]
@@ -163,7 +229,6 @@ mod tests
 			Operand::Number(3.0),
 			&mut rand::thread_rng(),
 		)
-		.unwrap()
 		.approx_eq(&Operand::Number(36.0)));
 	}
 	#[test]
@@ -174,7 +239,6 @@ mod tests
 			Operand::Number(3.0),
 			&mut rand::thread_rng(),
 		)
-		.unwrap()
 		.approx_eq(&Operand::Number(4.0)));
 	}
 	#[test]
@@ -185,7 +249,6 @@ mod tests
 			Operand::Number(3.0),
 			&mut rand::thread_rng(),
 		)
-		.unwrap()
 		.approx_eq(&Operand::Number(0.0)));
 	}
 	#[test]
@@ -196,7 +259,6 @@ mod tests
 			Operand::Number(3.0),
 			&mut rand::thread_rng(),
 		)
-		.unwrap()
 		.approx_eq(&Operand::Number(1728.0)));
 	}
 	#[test]
@@ -207,78 +269,6 @@ mod tests
 			Operand::Number(6.0),
 			&mut RiggedRandom::new([4, 1, 5, 2]),
 		)
-		.unwrap()
 		.approx_eq(&Operand::Number(12.0)));
-	}
-	#[test]
-	fn equal()
-	{
-		assert!(super::equal(
-			roll_operand(),
-			Operand::Number(2.0),
-			&mut rand::thread_rng()
-		)
-		.unwrap()
-		.approx_eq(&Operand::Number(4.0)));
-	}
-	#[test]
-	fn not_equal()
-	{
-		assert!(super::not_equal(
-			roll_operand(),
-			Operand::Number(2.0),
-			&mut rand::thread_rng()
-		)
-		.unwrap()
-		.approx_eq(&Operand::Number(11.0)));
-	}
-	#[test]
-	fn greater()
-	{
-		assert!(super::greater(
-			roll_operand(),
-			Operand::Number(2.0),
-			&mut rand::thread_rng()
-		)
-		.unwrap()
-		.approx_eq(&Operand::Number(10.0)));
-	}
-	#[test]
-	fn less()
-	{
-		assert!(super::less(
-			roll_operand(),
-			Operand::Number(2.0),
-			&mut rand::thread_rng()
-		)
-		.unwrap()
-		.approx_eq(&Operand::Number(1.0)));
-	}
-	#[test]
-	fn greater_or_equal()
-	{
-		assert!(super::greater_or_equal(
-			roll_operand(),
-			Operand::Number(2.0),
-			&mut rand::thread_rng()
-		)
-		.unwrap()
-		.approx_eq(&Operand::Number(14.0)));
-	}
-	#[test]
-	fn less_or_equal()
-	{
-		assert!(super::less_or_equal(
-			roll_operand(),
-			Operand::Number(2.0),
-			&mut rand::thread_rng()
-		)
-		.unwrap()
-		.approx_eq(&Operand::Number(5.0)));
-	}
-
-	fn roll_operand() -> Operand
-	{
-		Operand::from(RollGroup::new(6, [2, 4, 2, 6, 1].map(Roll::new)))
 	}
 }

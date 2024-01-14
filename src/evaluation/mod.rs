@@ -6,13 +6,13 @@ mod roll_types;
 pub use operand::*;
 pub use roll_types::*;
 
-use crate::{error::EvaluationError, parsing::Node, RangeRng};
+use crate::{error::ParsingError, parsing::Node, RangeRng};
 use std::collections::HashMap;
 
 pub(super) fn evaluate_tree<R>(
 	parse_tree: Node,
 	rng: &mut R,
-) -> Result<DiceEvaluation, EvaluationError>
+) -> Result<DiceEvaluation, ParsingError>
 where
 	R: RangeRng,
 {
@@ -29,7 +29,7 @@ fn evaluate_node<R>(
 	node: Node,
 	rng: &mut R,
 	rolls: &mut HashMap<RollId, RollGroup>,
-) -> Result<Operand, EvaluationError>
+) -> Result<Operand, ParsingError>
 where
 	R: RangeRng,
 {
@@ -48,7 +48,18 @@ where
 			evaluate_node(*left, rng, rolls)?,
 			evaluate_node(*right, rng, rolls)?,
 			rng,
-		)?,
+		),
+		Node::ComparisonTernary {
+			comp_op: comp_operator,
+			dice_left,
+			dice_right,
+			compare_to,
+		} => comp_operator.eval(
+			evaluate_node(*dice_left, rng, rolls)?,
+			evaluate_node(*dice_right, rng, rolls)?,
+			evaluate_node(*compare_to, rng, rolls)?,
+			rng,
+		),
 	};
 
 	if let Operand::Roll { id, data } = &operand
@@ -65,7 +76,7 @@ mod tests
 	use super::*;
 	use crate::{
 		parsing,
-		test_helpers::{assert_approx_eq, flip_result, RiggedRandom},
+		test_helpers::{assert_approx_eq, RiggedRandom},
 		tokenization::TokenStream,
 	};
 	use rand::thread_rng;
@@ -90,15 +101,6 @@ mod tests
 		);
 	}
 
-	#[test]
-	fn invalid_comparison()
-	{
-		assert!(matches!(
-			eval_expect_err("2 > 1"),
-			EvaluationError::FilterNumber(_)
-		));
-	}
-
 	fn eval_expect(input: &str) -> DiceEvaluation
 	{
 		eval_str(input).unwrap_or_else(|_| panic!("Could not evaluate `{input}`"))
@@ -108,20 +110,12 @@ mod tests
 		eval_str_rand(input, rand).unwrap_or_else(|_| panic!("Could not evaluate `{input}`"))
 	}
 
-	fn eval_expect_err(input: &str) -> EvaluationError
-	{
-		flip_result(eval_str(input))
-			.unwrap_or_else(|_| panic!("Unexpected successful evaluation of `{input}`"))
-	}
-
-	fn eval_str(input: &str) -> Result<DiceEvaluation, EvaluationError>
+	fn eval_str(input: &str) -> Result<DiceEvaluation, ParsingError>
 	{
 		eval_str_rand(input, &mut thread_rng())
 	}
-	fn eval_str_rand<R: RangeRng>(
-		input: &str,
-		rand: &mut R,
-	) -> Result<DiceEvaluation, EvaluationError>
+	fn eval_str_rand<R: RangeRng>(input: &str, rand: &mut R)
+		-> Result<DiceEvaluation, ParsingError>
 	{
 		let mut stream = TokenStream::new(input);
 		let tree = parsing::parse_tree_from(&mut stream)?;
