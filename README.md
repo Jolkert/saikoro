@@ -1,4 +1,8 @@
 # 🎲 Saikoro
+[<img alt="github" src="https://img.shields.io/badge/jolkert%2Fsaikoro-babbf1?style=for-the-badge&logo=github&label=github&logoColor=D9E0EE&labelColor=292c3c" height=23>](https://github.com/jolkert/saikoro)
+[<img alt="crates.io" src="https://img.shields.io/crates/v/saikoro?style=for-the-badge&logo=rust&logoColor=D9E0EE&labelColor=292c3c&color=ef9f76" height=23>](https://crates.io/crates/saikoro)
+[<img alt="docs.rs" src="https://img.shields.io/badge/saikoro-e5c890?style=for-the-badge&logo=docs.rs&logoColor=D9E0EE&label=docs.rs&labelColor=292c3c" height=23>](https://docs.rs/saikoro/latest/saikoro)
+
 **Saikoro** is a library for evaluating dice rolls with a syntax similar to the [Dice Notation](https://en.wikipedia.org/wiki/Dice_notation)
 used by many tabletop RPGs with a few (maybe) convenient extras thrown in. Expressions are treated as mathemical expressions
 where the `D` or `d` operator is used for rolling dice, and is a high-priority operator. It also comes with a very (painfully) simple 
