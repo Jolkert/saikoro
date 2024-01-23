@@ -24,8 +24,8 @@ pub enum ParsingError
 // morgan 2024-01-10
 /// An error representing a prefix operator in postfix position or vice-versa.
 /// # Usage Notes
-/// As of version 1.0, no postfix unary operators are yet implemented and therefore this error cannot
-/// yet occur. However, there are plans to implement them, so this error exists preemptively.
+/// As of version 1.0, no postfix unary operators are yet implemented and therefore this error
+/// cannot yet occur. However, there are plans to implement them, so this error exists preemptively.
 #[derive(Debug, Error, Clone, Copy)]
 #[error("Expected {} operator, found {:?}", .expected_direction, .operator)]
 pub struct UnaryWrongDirectionError

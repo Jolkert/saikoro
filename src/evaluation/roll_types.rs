@@ -1,4 +1,5 @@
-// TODO: i want to move this out of evaluation, but im not entirely sure where to put it -morgan 2024-01-10
+// TODO: i want to move this out of evaluation, but im not entirely sure where to put it -morgan
+// 2024-01-10
 use std::{cmp::Ordering, fmt::Display};
 
 /// A group of [`Roll`]s and the number of faces on the dice they were originally rolled from
@@ -208,8 +209,8 @@ impl Roll
 		}
 	}
 
-	/// calls [`into_removed`][`Roll::into_removed`] on `self` if it does **not** match the predicate, otherwise
-	/// it simply acts as a no-op and returns `self` back
+	/// calls [`into_removed`][`Roll::into_removed`] on `self` if it does **not** match the
+	/// predicate, otherwise it simply acts as a no-op and returns `self` back
 	#[must_use]
 	pub fn into_removed_unless<F>(self, predicate: F) -> Self
 	where

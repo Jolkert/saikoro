@@ -21,8 +21,8 @@ use std::ops::Range;
 use tokenization::TokenStream;
 
 /// Evaluates a string in format similar to [Standard Dice Notation](https://en.wikipedia.org/wiki/Dice_notation)
-/// evaluated with [`rand::thread_rng`]. Equivalent to [`eval_with_rand`] called with `&mut rand::thread_rng()`
-/// as the second parameter
+/// evaluated with [`rand::thread_rng`]. Equivalent to [`eval_with_rand`] called with `&mut
+/// rand::thread_rng()` as the second parameter
 /// # Examples
 /// ```rust
 /// # fn main() -> Result<(), saikoro::error::ParsingError> {
@@ -34,8 +34,8 @@ use tokenization::TokenStream;
 /// # }
 /// ```
 /// # Errors
-/// An error variant will be returned if the expression is unable to be parsed, or the evaluation function
-/// produces an error
+/// An error variant will be returned if the expression is unable to be parsed, or the evaluation
+/// function produces an error
 pub fn evaluate(input: &str) -> Result<DiceEvaluation, ParsingError>
 {
 	eval_with_rand(input, &mut rand::thread_rng())
@@ -65,14 +65,14 @@ pub fn eval_with_seed(input: &str, seed: u64) -> Result<DiceEvaluation, ParsingE
 /// # }
 /// ```
 /// # Errors
-/// An error variant will be returned if the expression is unable to be parsed, or the evaluation function
-/// produces an error
+/// An error variant will be returned if the expression is unable to be parsed, or the evaluation
+/// function produces an error
 /// #
 /// # Rng Notes
-/// Importantly, the evaluation function for dice rolls will generate a number in the range [0, faces)
-/// (note exclusive upper bound) and add 1 to the value, so if the [`RangeRng::rng_range`] function will
-/// always return the same value regardless of provided range, (eg. for testing purposes) the value produced
-/// from dice rolls may be 1 more than expected.
+/// Importantly, the evaluation function for dice rolls will generate a number in the range [0,
+/// faces) (note exclusive upper bound) and add 1 to the value, so if the [`RangeRng::rng_range`]
+/// function will always return the same value regardless of provided range, (eg. for testing
+/// purposes) the value produced from dice rolls may be 1 more than expected.
 /// # See Also
 /// For simply seeding a roll with a u64 seed, see [`saikoro::eval_with_seed`][`eval_with_seed`]
 /// [`saikoro::RangeRng`][`RangeRng`]
@@ -86,10 +86,10 @@ where
 	)
 }
 
-/// A utility trait for allowing flexibility for testing or rigging saikoro's random number generation.
-/// All implementers of [`rand::RngCore`] (i.e. all RNGs from the [`rand`] therefore ones one is likely
-/// to use) get an implementation of this trait for free, so most will not need to implement this trait,
-/// but it is availale publicly for those who do
+/// A utility trait for allowing flexibility for testing or rigging saikoro's random number
+/// generation. All implementers of [`rand::RngCore`] (i.e. all RNGs from the [`rand`] therefore
+/// ones one is likely to use) get an implementation of this trait for free, so most will not need
+/// to implement this trait, but it is availale publicly for those who do
 /// # Examples
 /// ```rust
 /// # use saikoro::RangeRng;
@@ -124,9 +124,10 @@ where
 /// # Note to Implementers
 /// In practice, when used by [`saikoro::eval_with_rand`][`crate::eval_with_rand`],
 /// the [`rng_range`][`RangeRng::rng_range`] function will generate a number in the range [0, faces)
-/// (note exclusive upper bound) and add 1 to the value, so if the [`rng_range`][`RangeRng::rng_range`]
-/// function will always return the same value regardless of provided range, (eg. for testing purposes)
-/// the value produced from dice rolls may be 1 more than expected.
+/// (note exclusive upper bound) and add 1 to the value, so if the
+/// [`rng_range`][`RangeRng::rng_range`] function will always return the same value regardless of
+/// provided range, (eg. for testing purposes) the value produced from dice rolls may be 1 more than
+/// expected.
 pub trait RangeRng
 {
 	/// Generates a random number within the bounds of the [`Range`]

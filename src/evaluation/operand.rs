@@ -24,7 +24,8 @@ impl Display for OperandType
 	}
 }
 
-/// An enum corresponding to the two types of operands that can be used as arguments in operator functions
+/// An enum corresponding to the two types of operands that can be used as arguments in operator
+/// functions
 #[derive(Debug, PartialEq, PartialOrd)]
 pub enum Operand
 {
@@ -37,8 +38,8 @@ pub enum Operand
 }
 impl Operand
 {
-	/// Returns [`OperandType::Number`] if the [`Operand`] is a [`Number`][`Operand::Number`] variant,
-	/// and [`OperandType::Roll`] if the [`Operand`] is a [`Roll`][`Operand::Roll`] variant
+	/// Returns [`OperandType::Number`] if the [`Operand`] is a [`Number`][`Operand::Number`]
+	/// variant, and [`OperandType::Roll`] if the [`Operand`] is a [`Roll`][`Operand::Roll`] variant
 	/// # Examples
 	/// ```rust
 	/// # use saikoro::evaluation::{Operand, OperandType};
@@ -85,8 +86,8 @@ impl Operand
 		}
 	}
 
-	/// Returns a new [`Number`][`Operand::Number`] variant with with the [`value`][`Operand::value`]
-	/// of `self`
+	/// Returns a new [`Number`][`Operand::Number`] variant with with the
+	/// [`value`][`Operand::value`] of `self`
 	/// # Examples
 	/// ```rust
 	/// # use saikoro::evaluation::{Operand, Roll, RollGroup};
