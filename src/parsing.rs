@@ -35,6 +35,10 @@ pub fn parse_tree_from(stream: &mut TokenStream) -> Result<Node, ParsingError>
 {
 	parse_min_power(stream, 0, ParseContext::default())
 }
+
+// parsing function kinda has to be big. separating this out much further would not be great. at
+// least for now -morgan 2024-01-22
+#[allow(clippy::too_many_lines)]
 fn parse_min_power(
 	stream: &mut TokenStream,
 	min_power: u8,
@@ -91,10 +95,8 @@ fn parse_min_power(
 				{
 					break;
 				}
-				else
-				{
-					Err(ParsingError::from(UnmatchedCloseDelimiterError))
-				}
+
+				Err(ParsingError::from(UnmatchedCloseDelimiterError))
 			}
 			Ok(Token::ComparisonOperator(op)) =>
 			{
@@ -102,10 +104,8 @@ fn parse_min_power(
 				{
 					break;
 				}
-				else
-				{
-					Err(ParsingError::from(UnmatchedComparisonError(*op)))
-				}
+
+				Err(ParsingError::from(UnmatchedComparisonError(*op)))
 			}
 			result =>
 			{
