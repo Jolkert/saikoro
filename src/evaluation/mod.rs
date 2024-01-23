@@ -7,7 +7,7 @@ pub use operand::*;
 pub use roll_types::*;
 
 use crate::{error::ParsingError, parsing::Node, RangeRng};
-use std::collections::HashMap;
+use std::{collections::HashMap, hash::Hash};
 
 pub(super) fn evaluate_tree<R>(
 	parse_tree: Node,
@@ -16,7 +16,7 @@ pub(super) fn evaluate_tree<R>(
 where
 	R: RangeRng,
 {
-	let mut rolls = HashMap::<RollId, RollGroup>::new();
+	let mut rolls = OrderedMap::<RollId, RollGroup>::new();
 
 	let value = evaluate_node(parse_tree, rng, &mut rolls)?.value();
 
@@ -28,7 +28,7 @@ where
 fn evaluate_node<R>(
 	node: Node,
 	rng: &mut R,
-	rolls: &mut HashMap<RollId, RollGroup>,
+	rolls: &mut OrderedMap<RollId, RollGroup>,
 ) -> Result<Operand, ParsingError>
 where
 	R: RangeRng,
@@ -68,6 +68,40 @@ where
 	}
 
 	Ok(operand)
+}
+
+#[derive(Debug, Clone)]
+struct OrderedMap<K, V>
+{
+	map: HashMap<K, V>,
+	insertion_order: Vec<K>,
+}
+impl<K, V> OrderedMap<K, V>
+{
+	fn new() -> Self
+	{
+		Self {
+			map: HashMap::new(),
+			insertion_order: Vec::new(),
+		}
+	}
+}
+impl<K: Eq + Hash + Copy, V> OrderedMap<K, V>
+{
+	fn insert(&mut self, k: K, v: V) -> Option<V>
+	{
+		if !self.map.contains_key(&k)
+		{
+			self.insertion_order.push(k.clone())
+		}
+
+		self.map.insert(k, v)
+	}
+
+	fn values(&self) -> impl Iterator<Item = &V>
+	{
+		self.insertion_order.iter().map(|key| &self.map[key])
+	}
 }
 
 #[cfg(test)]
