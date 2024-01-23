@@ -1,4 +1,4 @@
-use crate::evaluation::RollGroup;
+use crate::evaluation::{DiceEvaluation, RollGroup};
 
 impl RollGroup
 {
@@ -10,11 +10,16 @@ impl RollGroup
 		}
 	}
 
-	pub fn pop_mean(&self) -> f64
+	pub fn mean(&self) -> f64
+	{
+		f64::from(self.total()) / f64::from(self.len() as u32)
+	}
+
+	pub fn population_mean(&self) -> f64
 	{
 		self.expression().mean()
 	}
-	pub fn pop_stdev(&self) -> f64
+	pub fn population_stdev(&self) -> f64
 	{
 		self.expression().stdev()
 	}
@@ -23,6 +28,15 @@ impl RollGroup
 	{
 		let population = self.expression();
 		(f64::from(self.total()) - population.mean()) / population.stdev()
+	}
+
+	pub fn is_max_roll(&self) -> bool
+	{
+		self.iter().all(|roll| roll.original_value >= self.faces)
+	}
+	pub fn is_min_roll(&self) -> bool
+	{
+		self.iter().all(|roll| roll.original_value <= 1)
 	}
 }
 
@@ -68,6 +82,15 @@ impl Iterator for RollPopulationIter
 	}
 }
 
+impl DiceEvaluation
+{
+	pub fn mean_z_score(&self) -> f64
+	{
+		self.roll_groups.iter().map(RollGroup::z_score).sum::<f64>()
+			/ f64::from(self.roll_groups.len() as u32)
+	}
+}
+
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 struct DiceExpression
 {
@@ -76,11 +99,11 @@ struct DiceExpression
 }
 impl DiceExpression
 {
-	pub fn mean(&self) -> f64
+	fn mean(self) -> f64
 	{
 		f64::from(self.count) * f64::from(self.faces + 1) / 2.0
 	}
-	pub fn stdev(&self) -> f64
+	fn stdev(self) -> f64
 	{
 		let mean = self.mean();
 		let variance =
@@ -90,18 +113,19 @@ impl DiceExpression
 
 		f64::sqrt(variance)
 	}
-	pub fn population_size(&self) -> u32
+	fn population_size(self) -> u32
 	{
 		self.faces.pow(self.count)
 	}
 
-	fn population_iter(&self) -> impl Iterator<Item = u32>
+	fn population_iter(self) -> impl Iterator<Item = u32>
 	{
 		RollPopulationIter::new(self.count, self.faces)
 	}
 }
 
 #[cfg(test)]
+#[allow(clippy::unreadable_literal)]
 mod test
 {
 	use super::*;
@@ -116,15 +140,14 @@ mod test
 		);
 
 		let mut two_d_six = RollPopulationIter::new(2, 6).collect::<Vec<_>>();
-		two_d_six.sort();
-
+		two_d_six.sort_unstable();
 		assert_eq!(
 			two_d_six,
 			vec![
 				2, 3, 3, 4, 4, 4, 5, 5, 5, 5, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 7, 8, 8, 8, 8, 8, 9, 9,
 				9, 9, 10, 10, 10, 11, 11, 12
 			]
-		)
+		);
 	}
 
 	#[test]
@@ -137,15 +160,32 @@ mod test
 	fn stdev()
 	{
 		assert_approx_eq!(2.41522945769824, DiceExpression::new(2, 6).stdev());
-		assert_approx_eq!(2.41522945769824, DiceExpression::new(2, 6).stdev());
 	}
 
 	#[test]
 	fn z_score()
 	{
-		let absolute_error =
-			(RollGroup::new(6, [6, 6].map(Roll::new)).z_score() - 2.07019667802706).abs();
-		assert!(absolute_error < 1e-14);
+		assert_approx_eq!(
+			2.07019667802706,
+			RollGroup::new(6, [6, 6].map(Roll::new)).z_score(),
+			1e-14
+		);
+	}
+
+	#[test]
+	fn mean_z_score()
+	{
+		let groups = [
+			RollGroup::new(6, [5, 3].map(Roll::new)),
+			RollGroup::new(4, [3, 4].map(Roll::new)),
+		];
+
+		let evaluation = DiceEvaluation {
+			value: groups.iter().map(|group| f64::from(group.total())).sum(),
+			roll_groups: groups.into(),
+		};
+
+		assert_approx_eq!(0.839475199836382, evaluation.mean_z_score());
 	}
 
 	impl DiceExpression

@@ -187,7 +187,7 @@ pub(crate) mod test_helpers
 	}
 
 	macro_rules! assert_approx_eq {
-		($left: expr, $right: expr) => {
+		($left:expr, $right:expr) => {
 			match (&$left, &$right)
 			{
 				(left_val, right_val) =>
@@ -199,6 +199,18 @@ pub(crate) mod test_helpers
 				}
 			}
 		};
+		($left:expr, $right:expr, $error:expr) => {
+			match (&$left, &$right, &$error)
+			{
+				(left_val, right_val, error_val) =>
+				{
+					if !(f64::abs(*left_val - *right_val) < *error_val)
+					{
+						std::panic!("assertion that `left` approx equals `right` failed\nleft: {}\nright: {}\nmax error: {}", &*left_val, &*right_val, &*error_val);
+					}
+				}
+			}
+		}
 	}
 	pub(crate) use assert_approx_eq;
 
