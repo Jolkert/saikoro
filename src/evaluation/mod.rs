@@ -86,13 +86,13 @@ impl<K, V> OrderedMap<K, V>
 		}
 	}
 }
-impl<K: Eq + Hash + Copy, V> OrderedMap<K, V>
+impl<K: Eq + Hash + Clone, V> OrderedMap<K, V>
 {
 	fn insert(&mut self, k: K, v: V) -> Option<V>
 	{
 		if !self.map.contains_key(&k)
 		{
-			self.insertion_order.push(k.clone())
+			self.insertion_order.push(k.clone());
 		}
 
 		self.map.insert(k, v)
