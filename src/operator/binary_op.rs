@@ -5,7 +5,8 @@ use crate::{evaluation::Operand, RangeRng};
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct BinaryOperator
 {
-	pub token: OpToken, // if we add an operator that cant be binary, we have to change this -morgan 2024-01-04
+	pub token: OpToken, /* if we add an operator that cant be binary, we have to change this
+	                     * -morgan 2024-01-04 */
 	pub(crate) binding_power: BindingPower,
 }
 impl BinaryOperator
@@ -38,7 +39,8 @@ impl BinaryOperator
 	/// ```
 	/// # Errors
 	/// Returns an error variant if either of the operands is invalid for the operator (e.g. using
-	/// a [`Number`][`Operand::Number`] variant as the left-hand side of a comparison filter operator)
+	/// a [`Number`][`Operand::Number`] variant as the left-hand side of a comparison filter
+	/// operator)
 	pub fn eval<R: RangeRng>(&self, lhs: Operand, rhs: Operand, random: &mut R) -> Operand
 	{
 		self.eval_fn()(lhs, rhs, random)

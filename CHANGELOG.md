@@ -1,3 +1,7 @@
+# v1.1.1
+## Tweaks
+- `DiceEvaluation`s now have their `RollGroup`s sorted by the order in which they were initially evaluated
+
 # v1.1.0
 ## Changes
 - Reworked how comparison operators work. Comparisons are now properly parsed as ternary operators, and now no operators can produce
