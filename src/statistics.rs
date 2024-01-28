@@ -10,37 +10,116 @@ impl RollGroup
 		}
 	}
 
+	/// Returns the mean (average) of the [`RollGroup`] with rolls marked as "removed" excluded. For
+	/// a calculation that includes removed rolls, see [`mean_raw`][RollGroup::mean_raw]
 	pub fn mean(&self) -> f64
 	{
 		f64::from(self.total())
 			/ f64::from(self.iter().filter(|it| !it.is_removed()).count() as u32)
 	}
 
+	/// Returns the mean (average) of the [`RollGroup`] including rolls marked as "removed". For a
+	/// calculation that excludes removed rolls, see [`mean`][RollGroup::mean]
 	pub fn mean_raw(&self) -> f64
 	{
 		f64::from(self.iter().map(|it| it.original_value).sum::<u32>())
 			/ f64::from(self.len() as u32)
 	}
 
+	/// Returns the mean (average) of all possible values the expression which produced the
+	/// [`RollGroup`]
+	/// # Examples
+	/// ```rust
+	/// # use saikoro::evaluation::{Roll, RollGroup};
+	/// # fn main() {
+	/// // the actual roll values are unimportant, just that there are two (2) of them
+	/// let rolls: [Roll; 2] = get_roll_values();
+	/// // roll_group represents a roll of 2d6
+	/// let roll_group = RollGroup::new(6, rolls);
+	///
+	/// // average value of 2d6 is 7
+	/// assert_eq!(roll_group.population_mean(), 7.0);
+	/// # }
+	/// # fn get_roll_values() -> [Roll; 2] {
+	/// # [1, 2].map(Roll::new)
+	/// # }
+	/// ```
 	pub fn population_mean(&self) -> f64
 	{
 		self.expression().mean()
 	}
+	/// Returns the standard deviation of a roll with with the number and type of dice of the
+	/// [`RollGroup`] from the mean. (to get that mean, see
+	/// [`population_mean`][RollGroup::population_mean])
+	/// # Examples
+	/// ```rust
+	/// # use saikoro::evaluation::{Roll, RollGroup};
+	/// # fn main() {
+	/// // the actual roll values are unimportant, just that there are two (2) of them
+	/// let rolls: [Roll; 2] = get_roll_values();
+	/// // roll_group represents a roll of 2d6
+	/// let roll_group = RollGroup::new(6, rolls);
+	///
+	/// // standard deviation from the mean of 2d6 is about 2.42
+	/// assert_eq!(to_two_decimal_places(roll_group.population_stdev()), 2.42);
+	/// # }
+	/// # fn get_roll_values() -> [Roll; 2] {
+	/// # [1, 2].map(Roll::new)
+	/// # }
+	/// #
+	/// # fn to_two_decimal_places(val: f64) -> f64 {
+	/// # (val * 100.0).round() / 100.0
+	/// # }
+	/// ```
+	/// # Performance Considerations
+	/// The space complexity of this calculation is linear with respect to the number of dice rolled
+	/// (`O(n)` where `n` is the number of dice), and the time complexity is exponential with
+	/// respect to the number of dice (`O(m^n)` where `n` is the number of dice, and `m` is the
+	/// number of faces)
+	///
+	/// As such, this is considered a mildly costly operation and, while it may not cause a large
+	/// performance hit, it is nonetheless recommended to store this result if will be reused
+	/// instead of performing the calculation multiple times
+	#[must_use]
 	pub fn population_stdev(&self) -> f64
 	{
 		self.expression().stdev()
 	}
 
+	/// Returns [z-score](https://en.wikipedia.org/wiki/Standard_score) of the [`RollGroup`] that is, its
+	/// distance from the mean (see: [`population_mean`][RollGroup::population_mean]) in units of
+	/// standard deviation (see: [`population_stdev`][RollGroup::population_stdev])
+	/// # Examples
+	/// ```rust
+	/// # use saikoro::evaluation::{Roll, RollGroup};
+	/// # fn main() {
+	/// let roll_group = RollGroup::new(6, [4, 5].map(Roll::new));
+	/// assert_eq!(to_two_decimal_places(roll_group.z_score()), 0.83)
+	/// // roll_group total == 9
+	/// // population mean == 7
+	/// // population standard deviation ~= 2.42
+	/// // z-score ~= (9 - 7) / 2.42 == 0.83
+	/// # }
+	/// # fn to_two_decimal_places(val: f64) -> f64 {
+	/// # (val * 100.0).round() / 100.0
+	/// # }
+	/// ```
+	/// # Performance Considerations
+	/// Because this function relies on [`population_stdev`][RollGroup::population_stdev], it has
+	/// similar space and time complexity. See [`population_stdev`][RollGroup::population_stdev] for
+	/// more information
 	pub fn z_score(&self) -> f64
 	{
 		let population = self.expression();
 		(f64::from(self.total()) - population.mean()) / population.stdev()
 	}
 
+	/// Returns whether or not all rolls, including removed rolls, are their maximum value
 	pub fn is_max_roll(&self) -> bool
 	{
 		self.iter().all(|roll| roll.original_value >= self.faces)
 	}
+	/// Returns whether or not all rolls, including removed rolls, are their minimum value (1)
 	pub fn is_min_roll(&self) -> bool
 	{
 		self.iter().all(|roll| roll.original_value <= 1)
@@ -91,6 +170,14 @@ impl Iterator for RollPopulationIter
 
 impl DiceEvaluation
 {
+	/// Returns the mean (average) [z-score](https://en.wikipedia.org/wiki/Standard_score) of all
+	/// [`RollGroups`][`RollGroup`] in the [`DiceEvaluation`] (see [`RollGroup::z_score`] for
+	/// details)
+	/// # Performance Considerations
+	/// Because this function relies on calling [`z_score`][RollGroup::z_score] on each
+	/// [`RollGroup`], it has the same time and space complexity to consider, as well as the
+	/// additional time complexity from calling [`z_score`][RollGroup::z_score] multiple times (see
+	/// [`RollGroup::population_stdev`] for details)
 	pub fn mean_z_score(&self) -> f64
 	{
 		self.roll_groups.iter().map(RollGroup::z_score).sum::<f64>()
