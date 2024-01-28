@@ -12,7 +12,8 @@ impl RollGroup
 
 	pub fn mean(&self) -> f64
 	{
-		f64::from(self.total()) / f64::from(self.len() as u32)
+		f64::from(self.total())
+			/ f64::from(self.iter().filter(|it| !it.is_removed()).count() as u32)
 	}
 
 	pub fn population_mean(&self) -> f64
