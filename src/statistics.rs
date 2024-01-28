@@ -135,19 +135,37 @@ mod test
 	fn population_iter()
 	{
 		assert_eq!(
+			RollPopulationIter::new(1, 6).collect::<Vec<_>>(),
+			vec![1, 2, 3, 4, 5, 6]
+		);
+
+		assert_eq!(
 			RollPopulationIter::new(2, 4).collect::<Vec<_>>(),
 			vec![2, 3, 4, 5, 3, 4, 5, 6, 4, 5, 6, 7, 5, 6, 7, 8]
 		);
 
-		let mut two_d_six = RollPopulationIter::new(2, 6).collect::<Vec<_>>();
-		two_d_six.sort_unstable();
 		assert_eq!(
-			two_d_six,
+			sorted(RollPopulationIter::new(2, 6).collect::<Vec<_>>()),
 			vec![
 				2, 3, 3, 4, 4, 4, 5, 5, 5, 5, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 7, 8, 8, 8, 8, 8, 9, 9,
 				9, 9, 10, 10, 10, 11, 11, 12
 			]
 		);
+
+		assert_eq!(
+			sorted(RollPopulationIter::new(3, 4).collect::<Vec<_>>()),
+			vec![
+				3, 4, 4, 4, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 7, 7, 7,
+				7, 7, 7, 7, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 10,
+				10, 10, 10, 10, 10, 11, 11, 11, 12
+			]
+		);
+	}
+
+	fn sorted<T: Ord>(mut vec: Vec<T>) -> Vec<T>
+	{
+		vec.sort_unstable();
+		vec
 	}
 
 	#[test]
