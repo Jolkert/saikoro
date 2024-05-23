@@ -12,6 +12,7 @@ pub mod error;
 pub mod evaluation;
 pub mod operator;
 mod parsing;
+#[cfg(feature = "stats")]
 mod statistics;
 mod tokenization;
 
