@@ -1,17 +1,24 @@
+use std::cmp::Ordering;
+
 use crate::evaluation::{DiceEvaluation, RollGroup};
 
 impl RollGroup
 {
-	fn expression(&self) -> DiceExpression
+	/// Returns a [`PopulationData`] representing all possible values the expression which produced
+	/// this [`RollGroup`] could have produced. Used for getting staistical information about the
+	/// [`RollGroup`]
+	pub fn population_data(&self) -> PopulationData
 	{
-		DiceExpression {
+		PopulationData {
 			count: self.len() as u32,
 			faces: self.faces,
 		}
 	}
 
 	/// Returns the mean (average) of the [`RollGroup`] with rolls marked as "removed" excluded. For
-	/// a calculation that includes removed rolls, see [`mean_raw`][RollGroup::mean_raw]
+	/// a calculation that includes removed rolls, see [`mean_raw`][RollGroup::mean_raw]. The
+	/// *population mean* see [`RollGroup::population_data`] and
+	/// [`PopulationData::mean`]
 	pub fn mean(&self) -> f64
 	{
 		f64::from(self.total())
@@ -26,8 +33,84 @@ impl RollGroup
 			/ f64::from(self.len() as u32)
 	}
 
-	/// Returns the mean (average) of all possible values the expression which produced the
-	/// [`RollGroup`]
+	/// Returns the [z-score](https://en.wikipedia.org/wiki/Standard_score) of the
+	/// [`RollGroup`] (see [`PopulationData::z_score`] for details)
+	///
+	/// # Performance Considerations
+	/// Because this function relies on [`z_score`][PopulationData::z_score], it has the same
+	/// performance implications (see [`PopulationData::stdev`] for details)
+	pub fn z_score(&self) -> f64
+	{
+		self.population_data().z_score(self.total())
+	}
+
+	/// Returns whether or not all rolls, including removed rolls, are their maximum value
+	pub fn is_max_roll(&self) -> bool
+	{
+		self.iter().all(|roll| roll.original_value >= self.faces)
+	}
+	/// Returns whether or not all rolls, including removed rolls, are their minimum value (1)
+	pub fn is_min_roll(&self) -> bool
+	{
+		self.iter().all(|roll| roll.original_value <= 1)
+	}
+}
+
+impl DiceEvaluation
+{
+	/// Returns the mean (average) [z-score](https://en.wikipedia.org/wiki/Standard_score) of all
+	/// [`RollGroups`][`RollGroup`] in the [`DiceEvaluation`] (see [`RollGroup::z_score`] for
+	/// details)
+	///
+	/// # Performance Considerations
+	/// Because this function relies on calling [`z_score`][RollGroup::z_score] on each
+	/// [`RollGroup`], it has the same time and space complexity to consider, as well as the
+	/// additional time complexity from calling [`z_score`][RollGroup::z_score] multiple times (see
+	/// [`PopulationData::stdev`] for details)
+	#[must_use]
+	pub fn mean_z_score(&self) -> f64
+	{
+		self.roll_groups.iter().map(RollGroup::z_score).sum::<f64>()
+			/ f64::from(self.roll_groups.len() as u32)
+	}
+
+	/// Returns the mean (average) [z-score](https://en.wikipedia.org/wiki/Standard_score) of all
+	/// [`RollGroups`][`RollGroup`] in the [`DiceEvaluation`] scaled to a value in the interval [-1,
+	/// 1] by dividing the result of [`Self::mean_z_score`] by the average
+	/// [`PopulationData::min_z_score`] or [`PopulationData::max_z_score`] (depending on whether
+	/// [`Self::mean_z_score`] is positive or negative)
+	#[must_use]
+	pub fn mean_z_score_normalized(&self) -> f64
+	{
+		let mean_z_score = self.mean_z_score();
+		let scale_factor_key = match mean_z_score.partial_cmp(&0.0)
+		{
+			Some(Ordering::Less) => |group: &RollGroup| group.population_data().min_z_score(),
+			Some(Ordering::Greater) => |group: &RollGroup| group.population_data().max_z_score(),
+
+			// early return 0.0 if mean z score is 0 (or NaN but the NaN case should never happen)
+			// -morgan 2024-05-24
+			_ => return 0.0,
+		};
+
+		let scale_factor = self.roll_groups.iter().map(scale_factor_key).sum::<f64>()
+			/ f64::from(self.roll_groups.len() as u32);
+
+		mean_z_score / scale_factor
+	}
+}
+
+/// Represents information on the overall "population" of possible dice rolls which could result
+/// from a particular amount of a particular type of dice
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub struct PopulationData
+{
+	count: u32,
+	faces: u32,
+}
+impl PopulationData
+{
+	/// Returns the mean (average) value of the population
 	/// # Examples
 	/// ```rust
 	/// # use saikoro::evaluation::{Roll, RollGroup};
@@ -44,13 +127,13 @@ impl RollGroup
 	/// # [1, 2].map(Roll::new)
 	/// # }
 	/// ```
-	pub fn population_mean(&self) -> f64
+	pub fn mean(self) -> f64
 	{
-		self.expression().mean()
+		f64::from(self.count) * f64::from(self.faces + 1) / 2.0
 	}
-	/// Returns the standard deviation of a roll with with the number and type of dice of the
-	/// [`RollGroup`] from the mean. (to get that mean, see
-	/// [`population_mean`][RollGroup::population_mean])
+
+	/// Returns the standard deviation of the population from the mean. (to get that mean, see
+	/// [`mean`][PopulationData::mean])
 	/// # Examples
 	/// ```rust
 	/// # use saikoro::evaluation::{Roll, RollGroup};
@@ -81,14 +164,42 @@ impl RollGroup
 	/// performance hit, it is nonetheless recommended to store this result if will be reused
 	/// instead of performing the calculation multiple times
 	#[must_use]
-	pub fn population_stdev(&self) -> f64
+	pub fn stdev(self) -> f64
 	{
-		self.expression().stdev()
+		let mean = self.mean();
+		let variance =
+			self.population_iter()
+				.map(|val| (f64::from(val) - mean).powi(2))
+				.sum::<f64>() / f64::from(self.population_size());
+
+		variance.sqrt()
+	}
+	fn population_size(self) -> u32
+	{
+		self.faces.pow(self.count)
 	}
 
-	/// Returns [z-score](https://en.wikipedia.org/wiki/Standard_score) of the [`RollGroup`] that is, its
-	/// distance from the mean (see: [`population_mean`][RollGroup::population_mean]) in units of
-	/// standard deviation (see: [`population_stdev`][RollGroup::population_stdev])
+	fn population_iter(self) -> impl Iterator<Item = u32>
+	{
+		RollPopulationIter::new(self.count, self.faces)
+	}
+
+	/// The minimum value in the population (equivalent to the number of dice rolled, as the minimum
+	/// value occurs when all rolls are 1)
+	pub fn min(self) -> u32
+	{
+		self.count
+	}
+	/// The maximum value in the population (equivalent to the number of dice rolled times the
+	/// number of faces per die, as the maximum value occurs when all rolls are the maximum)
+	pub fn max(self) -> u32
+	{
+		self.faces * self.count
+	}
+
+	/// Returns the [z-score](https://en.wikipedia.org/wiki/Standard_score) of the given `value` that is, its
+	/// distance from the mean (see: [`mean`][PopulationData::mean]) in units of
+	/// standard deviation (see: [`stdev`][PopulationData::stdev])
 	/// # Examples
 	/// ```rust
 	/// # use saikoro::evaluation::{Roll, RollGroup};
@@ -105,24 +216,51 @@ impl RollGroup
 	/// # }
 	/// ```
 	/// # Performance Considerations
-	/// Because this function relies on [`population_stdev`][RollGroup::population_stdev], it has
-	/// similar space and time complexity. See [`population_stdev`][RollGroup::population_stdev] for
+	/// Because this function relies on [`stdev`][PopulationData::stdev], it has
+	/// similar space and time complexity. See [`stdev`][PopulationData::stdev] for
 	/// more information
-	pub fn z_score(&self) -> f64
+	#[must_use]
+	pub fn z_score(self, value: u32) -> f64
 	{
-		let population = self.expression();
-		(f64::from(self.total()) - population.mean()) / population.stdev()
+		(f64::from(value) - self.mean()) / self.stdev()
 	}
 
-	/// Returns whether or not all rolls, including removed rolls, are their maximum value
-	pub fn is_max_roll(&self) -> bool
+	/// Returns the [z-score](https://en.wikipedia.org/wiki/Standard_score) of the minimum value of the population
+	///
+	/// # Performance Considerations
+	/// Because this function relies on [`z_score`][PopulationData::z_score], it has the same
+	/// performance implications (see [`PopulationData::stdev`] for details)
+	#[must_use]
+	pub fn min_z_score(self) -> f64
 	{
-		self.iter().all(|roll| roll.original_value >= self.faces)
+		self.z_score(self.min())
 	}
-	/// Returns whether or not all rolls, including removed rolls, are their minimum value (1)
-	pub fn is_min_roll(&self) -> bool
+
+	/// Returns the [z-score](https://en.wikipedia.org/wiki/Standard_score) of the maximum value of the population
+	///
+	/// # Performance Considerations
+	/// Because this function relies on [`z_score`][PopulationData::z_score], it has the same
+	/// performance implications (see [`PopulationData::stdev`] for details)
+	#[must_use]
+	pub fn max_z_score(self) -> f64
 	{
-		self.iter().all(|roll| roll.original_value <= 1)
+		self.z_score(self.max())
+	}
+
+	/// Returns a tuple of the [z-scores](https://en.wikipedia.org/wiki/Standard_score) of the minimum and maximum
+	/// values of the population respectively. It is preferable to use this function if you will (or
+	/// even might) need both values, as it only calculates the standard deviation once, avoiding
+	/// any performance hits that caluclation might incur (see [`PopulationData::stdev`] for
+	/// details), and the actual calucations beyond the standard deviation are realtively cheap even
+	/// if one is thrown away
+	#[must_use]
+	pub fn min_max_z_score(self) -> (f64, f64)
+	{
+		let stdev = self.stdev();
+		(
+			(f64::from(self.min()) - self.mean()) / stdev,
+			(f64::from(self.max()) - self.mean()) / stdev,
+		)
 	}
 }
 
@@ -165,56 +303,6 @@ impl Iterator for RollPopulationIter
 		}
 
 		Some(self.vec.iter().sum())
-	}
-}
-
-impl DiceEvaluation
-{
-	/// Returns the mean (average) [z-score](https://en.wikipedia.org/wiki/Standard_score) of all
-	/// [`RollGroups`][`RollGroup`] in the [`DiceEvaluation`] (see [`RollGroup::z_score`] for
-	/// details)
-	/// # Performance Considerations
-	/// Because this function relies on calling [`z_score`][RollGroup::z_score] on each
-	/// [`RollGroup`], it has the same time and space complexity to consider, as well as the
-	/// additional time complexity from calling [`z_score`][RollGroup::z_score] multiple times (see
-	/// [`RollGroup::population_stdev`] for details)
-	pub fn mean_z_score(&self) -> f64
-	{
-		self.roll_groups.iter().map(RollGroup::z_score).sum::<f64>()
-			/ f64::from(self.roll_groups.len() as u32)
-	}
-}
-
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
-struct DiceExpression
-{
-	count: u32,
-	faces: u32,
-}
-impl DiceExpression
-{
-	fn mean(self) -> f64
-	{
-		f64::from(self.count) * f64::from(self.faces + 1) / 2.0
-	}
-	fn stdev(self) -> f64
-	{
-		let mean = self.mean();
-		let variance =
-			self.population_iter()
-				.map(|val| f64::powi(f64::from(val) - mean, 2))
-				.sum::<f64>() / f64::from(self.population_size());
-
-		f64::sqrt(variance)
-	}
-	fn population_size(self) -> u32
-	{
-		self.faces.pow(self.count)
-	}
-
-	fn population_iter(self) -> impl Iterator<Item = u32>
-	{
-		RollPopulationIter::new(self.count, self.faces)
 	}
 }
 
@@ -265,13 +353,13 @@ mod test
 	#[test]
 	fn mean()
 	{
-		assert_approx_eq!(7.0, DiceExpression::new(2, 6).mean());
+		assert_approx_eq!(7.0, PopulationData::new(2, 6).mean());
 	}
 
 	#[test]
 	fn stdev()
 	{
-		assert_approx_eq!(2.41522945769824, DiceExpression::new(2, 6).stdev());
+		assert_approx_eq!(2.41522945769824, PopulationData::new(2, 6).stdev());
 	}
 
 	#[test]
@@ -300,7 +388,7 @@ mod test
 		assert_approx_eq!(0.839475199836382, evaluation.mean_z_score());
 	}
 
-	impl DiceExpression
+	impl PopulationData
 	{
 		pub fn new(count: u32, faces: u32) -> Self
 		{
