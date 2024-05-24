@@ -31,6 +31,10 @@ fn main() {
   - Rolls 'removed' by the aforementioned filtering operators do actually get removed from the struct returned, just flagged as removed
   and not counted toward the total. As such, you can still see what was rolled even if it was 'removed'
 
+# Feature Flags
+`stats`
+- Adds functions for calculating statistical information on about the dice which were rolled
+
 # Syntax Documentation
 ## Binary Operator Priority
 Elements higher in the list are evaluated before those lower in the list

@@ -1,3 +1,7 @@
+# v1.2.0
+## Features
+- Added `statstics` module (gated behind `stats` feature flag) for getting statistical information dice roll results
+
 # v1.1.1
 ## Tweaks
 - `DiceEvaluation`s now have their `RollGroup`s sorted by the order in which they were initially evaluated
