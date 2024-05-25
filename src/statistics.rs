@@ -75,7 +75,7 @@ impl DiceEvaluation
 		let mean_z_score = self.mean_z_score();
 		let scale_factor_key = match mean_z_score.partial_cmp(&0.0)
 		{
-			Some(Ordering::Less) => |group: &RollGroup| group.population_data().min_z_score(),
+			Some(Ordering::Less) => |group: &RollGroup| -group.population_data().min_z_score(),
 			Some(Ordering::Greater) => |group: &RollGroup| group.population_data().max_z_score(),
 
 			// early return 0.0 if mean z score is 0 (or NaN but the NaN case should never happen)
