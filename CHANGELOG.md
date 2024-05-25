@@ -1,4 +1,8 @@
-# v1.2.0
+# v1.2.2
+## Bugfixes
+- Fixed `DiceEvaluation::mean_z_score_normalized` would always return a positive value
+
+# v1.2.1
 ## Features
 - Added `statstics` module (gated behind `stats` feature flag) for getting statistical information dice roll results
 
