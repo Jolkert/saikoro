@@ -13,6 +13,7 @@ exclude = ["bacon.toml", ".vscode/", "CHANGELOG.md"]
 
 [features]
 stats = []
+full = ["stats"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
