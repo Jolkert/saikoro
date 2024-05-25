@@ -1,4 +1,4 @@
-use std::cmp::Ordering;
+use std::{cmp::Ordering, collections::HashMap, ops::RangeInclusive};
 
 use crate::evaluation::{DiceEvaluation, RollGroup};
 
@@ -35,10 +35,6 @@ impl RollGroup
 
 	/// Returns the [z-score](https://en.wikipedia.org/wiki/Standard_score) of the
 	/// [`RollGroup`] (see [`PopulationData::z_score`] for details)
-	///
-	/// # Performance Considerations
-	/// Because this function relies on [`z_score`][PopulationData::z_score], it has the same
-	/// performance implications (see [`PopulationData::stdev`] for details)
 	pub fn z_score(&self) -> f64
 	{
 		self.population_data().z_score(self.total())
@@ -61,12 +57,6 @@ impl DiceEvaluation
 	/// Returns the mean (average) [z-score](https://en.wikipedia.org/wiki/Standard_score) of all
 	/// [`RollGroups`][`RollGroup`] in the [`DiceEvaluation`] (see [`RollGroup::z_score`] for
 	/// details)
-	///
-	/// # Performance Considerations
-	/// Because this function relies on calling [`z_score`][RollGroup::z_score] on each
-	/// [`RollGroup`], it has the same time and space complexity to consider, as well as the
-	/// additional time complexity from calling [`z_score`][RollGroup::z_score] multiple times (see
-	/// [`PopulationData::stdev`] for details)
 	#[must_use]
 	pub fn mean_z_score(&self) -> f64
 	{
@@ -102,7 +92,7 @@ impl DiceEvaluation
 
 /// Represents information on the overall "population" of possible dice rolls which could result
 /// from a particular amount of a particular type of dice
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct PopulationData
 {
 	count: u32,
@@ -121,13 +111,13 @@ impl PopulationData
 	/// let roll_group = RollGroup::new(6, rolls);
 	///
 	/// // average value of 2d6 is 7
-	/// assert_eq!(roll_group.population_mean(), 7.0);
+	/// assert_eq!(roll_group.population_data().mean(), 7.0);
 	/// # }
 	/// # fn get_roll_values() -> [Roll; 2] {
 	/// # [1, 2].map(Roll::new)
 	/// # }
 	/// ```
-	pub fn mean(self) -> f64
+	pub fn mean(&self) -> f64
 	{
 		f64::from(self.count) * f64::from(self.faces + 1) / 2.0
 	}
@@ -144,7 +134,7 @@ impl PopulationData
 	/// let roll_group = RollGroup::new(6, rolls);
 	///
 	/// // standard deviation from the mean of 2d6 is about 2.42
-	/// assert_eq!(to_two_decimal_places(roll_group.population_stdev()), 2.42);
+	/// assert_eq!(to_two_decimal_places(roll_group.population_data().stdev()), 2.42);
 	/// # }
 	/// # fn get_roll_values() -> [Roll; 2] {
 	/// # [1, 2].map(Roll::new)
@@ -154,45 +144,94 @@ impl PopulationData
 	/// # (val * 100.0).round() / 100.0
 	/// # }
 	/// ```
-	/// # Performance Considerations
-	/// The space complexity of this calculation is linear with respect to the number of dice rolled
-	/// (`O(n)` where `n` is the number of dice), and the time complexity is exponential with
-	/// respect to the number of dice (`O(m^n)` where `n` is the number of dice, and `m` is the
-	/// number of faces)
-	///
-	/// As such, this is considered a mildly costly operation and, while it may not cause a large
-	/// performance hit, it is nonetheless recommended to store this result if will be reused
-	/// instead of performing the calculation multiple times
 	#[must_use]
-	pub fn stdev(self) -> f64
+	pub fn stdev(&self) -> f64
 	{
 		let mean = self.mean();
+		let possibility_counts = self.ways_to_make_all_results();
 		let variance =
-			self.population_iter()
-				.map(|val| (f64::from(val) - mean).powi(2))
-				.sum::<f64>() / f64::from(self.population_size());
+			self.possible_rolls()
+				.map(|value| {
+					(f64::from(value) - mean).powi(2)
+						* possibility_counts[(value - self.count) as usize]
+				})
+				.sum::<f64>() / self.population_size();
 
 		variance.sqrt()
 	}
-	fn population_size(self) -> u32
+
+	fn population_size(&self) -> f64
 	{
-		self.faces.pow(self.count)
+		f64::from(self.faces).powf(f64::from(self.count))
 	}
 
-	fn population_iter(self) -> impl Iterator<Item = u32>
+	fn possible_rolls(&self) -> RangeInclusive<u32>
 	{
-		RollPopulationIter::new(self.count, self.faces)
+		self.count..=(self.faces * self.count)
+	}
+
+	fn ways_to_make_all_results(&self) -> Vec<f64>
+	{
+		let mut amortization_table = HashMap::with_capacity(
+			(((self.faces * self.count) - self.count + 1) * self.count) as usize,
+		);
+
+		self.possible_rolls()
+			.map(|roll| self.ways_to_make(roll, &mut amortization_table))
+			.collect()
+	}
+
+	fn ways_to_make(&self, total: u32, amortization_table: &mut HashMap<(u32, u32), f64>) -> f64
+	{
+		Self::ways_to_make_rec(total, self.count, self.faces, amortization_table)
+	}
+
+	fn ways_to_make_rec(
+		total: u32,
+		count: u32,
+		faces: u32,
+
+		amortization_table: &mut HashMap<(u32, u32), f64>,
+	) -> f64
+	{
+		amortization_table
+			.get(&(total, count))
+			.copied()
+			.unwrap_or_else(|| {
+				if count <= 1
+				{
+					(1..=faces).contains(&total).into()
+				}
+				else
+				{
+					let possibilities = (1..=faces)
+						.filter_map(|final_roll| {
+							total.checked_sub(final_roll).map(|previous_sum| {
+								Self::ways_to_make_rec(
+									previous_sum,
+									count - 1,
+									faces,
+									amortization_table,
+								)
+							})
+						})
+						.sum::<f64>();
+
+					amortization_table.insert((total, count), possibilities);
+					possibilities
+				}
+			})
 	}
 
 	/// The minimum value in the population (equivalent to the number of dice rolled, as the minimum
 	/// value occurs when all rolls are 1)
-	pub fn min(self) -> u32
+	pub fn min(&self) -> u32
 	{
 		self.count
 	}
 	/// The maximum value in the population (equivalent to the number of dice rolled times the
 	/// number of faces per die, as the maximum value occurs when all rolls are the maximum)
-	pub fn max(self) -> u32
+	pub fn max(&self) -> u32
 	{
 		self.faces * self.count
 	}
@@ -215,46 +254,33 @@ impl PopulationData
 	/// # (val * 100.0).round() / 100.0
 	/// # }
 	/// ```
-	/// # Performance Considerations
-	/// Because this function relies on [`stdev`][PopulationData::stdev], it has
-	/// similar space and time complexity. See [`stdev`][PopulationData::stdev] for
-	/// more information
 	#[must_use]
-	pub fn z_score(self, value: u32) -> f64
+	pub fn z_score(&self, value: u32) -> f64
 	{
 		(f64::from(value) - self.mean()) / self.stdev()
 	}
 
 	/// Returns the [z-score](https://en.wikipedia.org/wiki/Standard_score) of the minimum value of the population
-	///
-	/// # Performance Considerations
-	/// Because this function relies on [`z_score`][PopulationData::z_score], it has the same
-	/// performance implications (see [`PopulationData::stdev`] for details)
 	#[must_use]
-	pub fn min_z_score(self) -> f64
+	pub fn min_z_score(&self) -> f64
 	{
 		self.z_score(self.min())
 	}
 
 	/// Returns the [z-score](https://en.wikipedia.org/wiki/Standard_score) of the maximum value of the population
-	///
-	/// # Performance Considerations
-	/// Because this function relies on [`z_score`][PopulationData::z_score], it has the same
-	/// performance implications (see [`PopulationData::stdev`] for details)
 	#[must_use]
-	pub fn max_z_score(self) -> f64
+	pub fn max_z_score(&self) -> f64
 	{
 		self.z_score(self.max())
 	}
 
 	/// Returns a tuple of the [z-scores](https://en.wikipedia.org/wiki/Standard_score) of the minimum and maximum
 	/// values of the population respectively. It is preferable to use this function if you will (or
-	/// even might) need both values, as it only calculates the standard deviation once, avoiding
-	/// any performance hits that caluclation might incur (see [`PopulationData::stdev`] for
-	/// details), and the actual calucations beyond the standard deviation are realtively cheap even
-	/// if one is thrown away
+	/// even might) need both values. This is because it only calculates the standard deviation
+	/// once, avoiding any performance hits that caluclation might incur. The actual calucations
+	/// beyond the standard deviation are realtively cheap even if one is thrown away
 	#[must_use]
-	pub fn min_max_z_score(self) -> (f64, f64)
+	pub fn min_max_z_score(&self) -> (f64, f64)
 	{
 		let stdev = self.stdev();
 		(
@@ -264,91 +290,12 @@ impl PopulationData
 	}
 }
 
-struct RollPopulationIter
-{
-	faces: u32,
-	vec: Vec<u32>,
-}
-impl RollPopulationIter
-{
-	fn new(count: u32, faces: u32) -> Self
-	{
-		let mut starting_state = vec![1; count as usize];
-		starting_state[0] = 0;
-
-		Self {
-			faces,
-			vec: starting_state,
-		}
-	}
-}
-impl Iterator for RollPopulationIter
-{
-	type Item = u32;
-
-	fn next(&mut self) -> Option<Self::Item>
-	{
-		for i in 0..self.vec.len()
-		{
-			let new_val = self.vec[i] + 1;
-			if new_val > self.faces && i >= self.vec.len() - 1
-			{
-				return None;
-			}
-			self.vec[i] = if new_val <= self.faces { new_val } else { 1 };
-			if new_val <= self.faces
-			{
-				break;
-			}
-		}
-
-		Some(self.vec.iter().sum())
-	}
-}
-
 #[cfg(test)]
 #[allow(clippy::unreadable_literal)]
 mod test
 {
 	use super::*;
 	use crate::{evaluation::Roll, test_helpers::assert_approx_eq};
-
-	#[test]
-	fn population_iter()
-	{
-		assert_eq!(
-			RollPopulationIter::new(1, 6).collect::<Vec<_>>(),
-			vec![1, 2, 3, 4, 5, 6]
-		);
-
-		assert_eq!(
-			RollPopulationIter::new(2, 4).collect::<Vec<_>>(),
-			vec![2, 3, 4, 5, 3, 4, 5, 6, 4, 5, 6, 7, 5, 6, 7, 8]
-		);
-
-		assert_eq!(
-			sorted(RollPopulationIter::new(2, 6).collect::<Vec<_>>()),
-			vec![
-				2, 3, 3, 4, 4, 4, 5, 5, 5, 5, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 7, 8, 8, 8, 8, 8, 9, 9,
-				9, 9, 10, 10, 10, 11, 11, 12
-			]
-		);
-
-		assert_eq!(
-			sorted(RollPopulationIter::new(3, 4).collect::<Vec<_>>()),
-			vec![
-				3, 4, 4, 4, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 7, 7, 7,
-				7, 7, 7, 7, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 10,
-				10, 10, 10, 10, 10, 11, 11, 11, 12
-			]
-		);
-	}
-
-	fn sorted<T: Ord>(mut vec: Vec<T>) -> Vec<T>
-	{
-		vec.sort_unstable();
-		vec
-	}
 
 	#[test]
 	fn mean()
