@@ -14,7 +14,7 @@ A very basic usage of Saikoro's library would look something like
 ```rust
 fn main() {
     if let Ok(roll) = saikoro::evaluate("8d6") {
-        println!("Fireball deals {} fire damage", roll.value),
+        println!("Fireball deals {} fire damage", roll.value);
     }
 }
 ```

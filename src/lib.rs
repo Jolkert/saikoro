@@ -230,3 +230,7 @@ pub(crate) mod test_helpers
 		);
 	}
 }
+
+#[cfg(doctest)]
+#[doc = include_str!("../README.md")]
+struct ReadmeDoctests;
