@@ -1,6 +1,9 @@
-# v1.2.3
+# v1.2.4
 ## Miscellaneous
 - Added missing docs for public items
+
+# v1.2.3
+- Accidentally skipped due to typo. Oops
 
 # v1.2.2
 ## Bugfixes
