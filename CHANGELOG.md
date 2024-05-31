@@ -7,7 +7,7 @@
 
 # v1.2.2
 ## Bugfixes
-- Fixed `DiceEvaluation::mean_z_score_normalized` would always return a positive value
+- Fixed `DiceEvaluation::mean_z_score_normalized` always returning a positive value
 
 # v1.2.1
 ## Features
