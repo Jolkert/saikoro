@@ -1,3 +1,7 @@
+# v1.2.3
+## Miscellaneous
+- Added missing docs for public items
+
 # v1.2.2
 ## Bugfixes
 - Fixed `DiceEvaluation::mean_z_score_normalized` would always return a positive value

@@ -6,8 +6,11 @@ use std::fmt::Display;
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct UnaryOperator
 {
+	/// The token which represents this operator
 	pub token: UnaryOpToken,
+	/// The binding power of this operator
 	pub binding_power: u8,
+	/// The direction of this operator (i.e. whether it is a "prefix" or "postfix" operator)
 	pub direction: UnaryDirection,
 }
 impl UnaryOperator
@@ -68,8 +71,11 @@ impl From<UnaryOpToken> for UnaryOperator
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum UnaryOpToken
 {
+	/// Represents the unary plus (`+(expr)`)
 	Plus,
+	/// Represents the unary minus (`-(expr)`)
 	Minus,
+	/// Represents the unary dice roll operator (`d(expr)`)
 	Dice,
 }
 impl TryFrom<OpToken> for UnaryOpToken
@@ -91,7 +97,9 @@ impl TryFrom<OpToken> for UnaryOpToken
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum UnaryDirection
 {
+	/// Represents a unary operator which precedes its operand
 	Prefix,
+	/// Represents a unary operator which comes after its operand
 	Postfix,
 }
 impl Display for UnaryDirection

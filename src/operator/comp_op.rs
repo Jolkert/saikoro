@@ -3,14 +3,21 @@ use crate::{evaluation::Operand, RangeRng};
 use super::{function, ParseOperatorError};
 use std::{fmt::Display, str::FromStr};
 
+/// Represents a comparison operator which is used to filter out individual rolls of a dice roll
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum CompOperator
 {
+	/// Represents the equality comparison (`roll == expr`)
 	Equals,
+	/// Represents the inequality comparison (`roll != expr`)
 	NotEquals,
+	/// Represents the "greater than" comparison (`roll > expr`)
 	GreaterThan,
+	/// Represents the "less then" comparison (`roll < expr`)
 	LessThan,
+	/// Represents the "greater than or equal to" comparison (`roll >= expr`)
 	GreaterOrEqual,
+	/// Represents the "less than or equal to" comparison (`roll <= expr`)
 	LessOrEqual,
 }
 impl CompOperator
@@ -28,6 +35,7 @@ impl CompOperator
 		}
 	}
 
+	/// Use this function and the arguments provided to evaluate a comparison expression
 	pub fn eval<R: RangeRng>(
 		self,
 		dice_lhs: Operand,

@@ -5,7 +5,9 @@ use std::{fmt::Display, ops};
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum OperandType
 {
+	/// Represents an [`Operand::Number`]
 	Number,
+	/// Represents an [`Operand::Roll`]
 	Roll,
 }
 impl Display for OperandType
@@ -29,10 +31,16 @@ impl Display for OperandType
 #[derive(Debug, PartialEq, PartialOrd)]
 pub enum Operand
 {
+	/// An operand which is a single number or [`RollGroup`] that was collapsed to its total from a
+	/// prior operation
 	Number(f64),
+	/// An operand which is the result of a roll expression
 	Roll
 	{
+		/// The unique identifier of this [`Operand`]. Used for the evaluator to make later
+		/// filtering changes
 		id: RollId,
+		/// The underlying result of the roll expression
 		data: RollGroup,
 	},
 }

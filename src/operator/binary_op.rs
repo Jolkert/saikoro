@@ -5,8 +5,10 @@ use crate::{evaluation::Operand, RangeRng};
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct BinaryOperator
 {
-	pub token: OpToken, /* if we add an operator that cant be binary, we have to change this
-	                     * -morgan 2024-01-04 */
+	// if we add an operator that cant be binary, we have to change this
+	// -morgan 2024-01-04
+	/// The token which represents this operator
+	pub token: OpToken,
 	pub(crate) binding_power: BindingPower,
 }
 impl BinaryOperator

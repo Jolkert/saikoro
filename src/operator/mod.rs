@@ -16,12 +16,19 @@ use thiserror::Error;
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum OpToken
 {
+	/// Represents the string token `+`
 	Plus,
+	/// Represents the string token `-`
 	Minus,
+	/// Represents the string token `*`
 	Multiply,
+	/// Represents the string token `/`
 	Divide,
+	/// Represents the string token `%`
 	Modulus,
+	/// Represents the string token `^`
 	Power,
+	/// Represents the string token `d` (case insensitive)
 	Dice,
 }
 impl FromStr for OpToken
@@ -86,7 +93,9 @@ impl From<&str> for ParseOperatorError
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Operator
 {
+	/// An operator which only takes one operand
 	Unary(UnaryOperator),
+	/// An operator which takes two operands
 	Binary(BinaryOperator),
 }
 impl From<UnaryOperator> for Operator

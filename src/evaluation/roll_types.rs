@@ -7,6 +7,7 @@ use std::{cmp::Ordering, fmt::Display};
 pub struct RollGroup
 {
 	rolls: Box<[Roll]>,
+	/// The number of faces per die in the [`RollGroup`]
 	pub faces: u32,
 }
 impl RollGroup
@@ -146,6 +147,8 @@ impl PartialOrd for RollGroup
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
 pub struct Roll
 {
+	/// The original value of the [`Roll`]. Use this over [`Self::value`] if you still want the
+	/// value of a roll that was filtered
 	pub original_value: u32,
 	removed: bool,
 }
@@ -194,11 +197,14 @@ impl Roll
 		}
 	}
 
+	/// Marks the [`Roll`] as removed
 	pub fn remove(&mut self)
 	{
 		self.removed = true;
 	}
 
+	/// Marks the [`Roll`] as removed unless the `predicate` returns `true`  
+	/// Effectively a no-op on a roll which is alread marked "removed"
 	pub fn remove_unless<F>(&mut self, predicate: F)
 	where
 		F: FnOnce(&Self) -> bool,
@@ -209,7 +215,7 @@ impl Roll
 		}
 	}
 
-	/// calls [`into_removed`][`Roll::into_removed`] on `self` if it does **not** match the
+	/// Calls [`into_removed`][`Roll::into_removed`] on `self` if it does **not** match the
 	/// predicate, otherwise it simply acts as a no-op and returns `self` back
 	#[must_use]
 	pub fn into_removed_unless<F>(self, predicate: F) -> Self
@@ -294,14 +300,20 @@ mod tests
 	}
 }
 
+/// Represents the final result of a dice expression
 #[derive(Debug)]
 pub struct DiceEvaluation
 {
+	/// The final total after performing all operations on the input string
 	pub value: f64,
+	/// A collection of [`RollGroups`][RollGroup] which represents each die rolled while parsing
+	/// the input string
 	pub roll_groups: Box<[RollGroup]>,
 }
 impl DiceEvaluation
 {
+	/// Returns an iterator over the individual [`Rolls`][Roll] of the [`DiceEvaluation`] without
+	/// the context of the [`RollGroup`] they originate from
 	pub fn ungrouped_rolls(&self) -> impl Iterator<Item = &Roll>
 	{
 		self.roll_groups.iter().flat_map(RollGroup::iter)
