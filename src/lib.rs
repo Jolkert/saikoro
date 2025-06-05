@@ -17,9 +17,10 @@ mod statistics;
 mod tokenization;
 
 use error::ParsingError;
+use crate::parsing::Node;
 use evaluation::DiceEvaluation;
 use rand::{Rng, RngCore, SeedableRng};
-use std::ops::Range;
+use std::{ops::Range, collections::HashMap};
 use tokenization::TokenStream;
 
 /// Evaluates a string in format similar to [Standard Dice Notation](https://en.wikipedia.org/wiki/Dice_notation)
@@ -38,17 +39,68 @@ use tokenization::TokenStream;
 /// # Errors
 /// An error variant will be returned if the expression is unable to be parsed, or the evaluation
 /// function produces an error
-pub fn evaluate(input: &str) -> Result<DiceEvaluation, ParsingError>
+pub fn evaluate(input: &str, symbol_table: Option<&SymbolTable>) -> Result<DiceEvaluation, ParsingError>
 {
-	eval_with_rand(input, &mut rand::thread_rng())
+	eval_with_rand(input, &mut rand::thread_rng(), symbol_table.unwrap_or(&SymbolTable::new()))
 }
 
 /// A utility wrapper function for seeding a dice roll with the given u64 as the seed
 /// (see [`saikoro::eval_with_rand`][`eval_with_rand`] for more information)
-pub fn eval_with_seed(input: &str, seed: u64) -> Result<DiceEvaluation, ParsingError>
+pub fn eval_with_seed(input: &str, symbol_table: Option<&SymbolTable>, seed: u64) -> Result<DiceEvaluation, ParsingError>
 {
 	let mut seeded_random = rand::rngs::StdRng::seed_from_u64(seed);
-	eval_with_rand(input, &mut seeded_random)
+	eval_with_rand(input, &mut seeded_random,symbol_table.unwrap_or(&SymbolTable::new()))
+}
+
+pub fn parse(input: &str) -> Result<Node, ParsingError> {
+	parsing::parse_tree_from(&mut TokenStream::new(input))
+}
+
+pub fn eval_parsed(input: Node, symbol_table: Option<&SymbolTable>) -> Result<DiceEvaluation, ParsingError> {
+	evaluation::evaluate_tree(input, &mut rand::thread_rng(), symbol_table.unwrap_or(&SymbolTable::new()))
+}
+
+pub fn eval_parsed_with_seed(input: Node, symbol_table: Option<&SymbolTable>, seed: u64) -> Result<DiceEvaluation, ParsingError> {
+	let mut seeded_random = rand::rngs::StdRng::seed_from_u64(seed);
+	evaluation::evaluate_tree(input, &mut seeded_random, symbol_table.unwrap_or(&SymbolTable::new()))
+}
+pub struct SymbolTable(HashMap<String, Node>);
+
+impl SymbolTable {
+ pub fn new() -> Self {
+	return SymbolTable(HashMap::<String, Node>::new())
+ }
+
+ pub fn insert(&mut self, k: String, v: String) {
+	let parsed_exp = parsing::parse_tree_from(&mut TokenStream::new(v.as_str()));
+
+	if parsed_exp.is_ok() {
+		self.0.insert(k, parsed_exp.unwrap());
+		//return Ok(self);
+	} else {
+		//return Err(parsed_exp.unwrap_err());
+	}
+ }
+
+ fn get(&self, k: &String) -> Option<Node>{
+	self.0.get(k).cloned()
+ }
+
+}
+
+impl TryFrom<HashMap<String, String>> for SymbolTable {
+
+	type Error = ParsingError;
+
+	fn try_from(str_map: HashMap<String, String>) -> Result<Self, Self::Error> {
+		let mut result = SymbolTable::new();
+
+		for (sym, exp) in str_map {
+			result.insert(sym, exp);
+		}
+
+		return Ok(result);
+	}
 }
 
 /// Evaluates a string in format similar to [Standard Dice Notation](https://en.wikipedia.org/wiki/Dice_notation)
@@ -78,13 +130,14 @@ pub fn eval_with_seed(input: &str, seed: u64) -> Result<DiceEvaluation, ParsingE
 /// # See Also
 /// For simply seeding a roll with a u64 seed, see [`saikoro::eval_with_seed`][`eval_with_seed`]
 /// [`saikoro::RangeRng`][`RangeRng`]
-pub fn eval_with_rand<R>(input: &str, rand: &mut R) -> Result<DiceEvaluation, ParsingError>
+pub fn eval_with_rand<R>(input: &str, rand: &mut R, symbol_table: &SymbolTable) -> Result<DiceEvaluation, ParsingError>
 where
 	R: RangeRng,
 {
 	evaluation::evaluate_tree(
 		parsing::parse_tree_from(&mut TokenStream::new(input))?,
 		rand,
+		symbol_table,
 	)
 }
 
@@ -147,7 +200,7 @@ impl<T: RngCore> RangeRng for T
 #[cfg(test)]
 pub(crate) mod test_helpers
 {
-	use crate::{eval_with_rand, RangeRng};
+	use crate::{eval_with_rand, RangeRng, SymbolTable};
 	use std::collections::VecDeque;
 
 	pub struct RiggedRandom
@@ -218,7 +271,7 @@ pub(crate) mod test_helpers
 	#[test]
 	fn rigged_random_test()
 	{
-		let rolls = eval_with_rand("3d6", &mut RiggedRandom::new([3, 5, 2])).unwrap();
+		let rolls = eval_with_rand("3d6", &mut RiggedRandom::new([3, 5, 2]), &SymbolTable::new()).unwrap();
 
 		assert_approx_eq!(rolls.value, 10.0);
 		assert_eq!(

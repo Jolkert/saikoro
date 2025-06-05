@@ -16,6 +16,7 @@ static TOKEN_TYPES: &[TokenType] = &[
 	TokenType::OpenDelimiter,
 	TokenType::CloseDelimiter,
 	TokenType::Whitespace,
+	TokenType::Symbol,
 ];
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum TokenType
@@ -26,6 +27,7 @@ pub enum TokenType
 	OpenDelimiter = 1 << 3,
 	CloseDelimiter = 1 << 4,
 	Whitespace = 1 << 5,
+	Symbol = 1 << 6,
 }
 impl TokenType
 {
@@ -39,6 +41,7 @@ impl TokenType
 			Self::OpenDelimiter => regex!(r"\("),
 			Self::CloseDelimiter => regex!(r"\)"),
 			Self::Whitespace => regex!(r"\s+"),
+			Self::Symbol => regex!(r"[a-zA-Z_][a-zA-Z_\-\d]*"),
 		}
 	}
 
@@ -52,6 +55,7 @@ impl TokenType
 			Self::OpenDelimiter => "OpenDelim",
 			Self::CloseDelimiter => "CloseDelim",
 			Self::Whitespace => "Whitespace",
+			Self::Symbol => "Symbol",
 		}
 	}
 }
@@ -72,6 +76,7 @@ pub enum Token
 	ComparisonOperator(CompOperator),
 	OpenDelimiter,
 	CloseDelimiter,
+	Symbol(String),
 }
 impl Token
 {
@@ -84,6 +89,7 @@ impl Token
 			Self::ComparisonOperator(_) => TokenType::ComparisonOperator,
 			Self::OpenDelimiter => TokenType::OpenDelimiter,
 			Self::CloseDelimiter => TokenType::CloseDelimiter,
+			Self::Symbol(_) => TokenType::Symbol,
 		}
 	}
 }

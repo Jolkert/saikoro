@@ -7,7 +7,7 @@ use crate::{
 	tokenization::{Token, TokenStream, TokenType},
 };
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Node
 {
 	Binary
@@ -29,6 +29,7 @@ pub enum Node
 		compare_to: Box<Self>,
 	},
 	Leaf(f64),
+	Symbolic(String),
 }
 
 pub fn parse_tree_from(stream: &mut TokenStream) -> Result<Node, ParsingError>
@@ -64,13 +65,14 @@ fn parse_min_power(
 				operator,
 				argument: Box::new(parse_min_power(stream, operator.binding_power, context)?),
 			}
-		}
+		},
 		Token::OpenDelimiter =>
 		{
 			let value = parse_min_power(stream, 0, context.expect_close_paren())?;
 			stream.consume_expecting(TokenType::CloseDelimiter)?;
 			value
-		}
+		},
+		Token::Symbol(s) => Node::Symbolic(s),
 		_ => unreachable!("stream.expect should prevent this branch from ever occuring"),
 	};
 

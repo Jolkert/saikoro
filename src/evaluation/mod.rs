@@ -6,19 +6,20 @@ mod roll_types;
 pub use operand::*;
 pub use roll_types::*;
 
-use crate::{error::ParsingError, parsing::Node, RangeRng};
+use crate::{error::ParsingError, parsing::Node, RangeRng, SymbolTable};
 use std::{collections::HashMap, hash::Hash};
 
 pub(super) fn evaluate_tree<R>(
 	parse_tree: Node,
 	rng: &mut R,
+	symbol_table: &SymbolTable,
 ) -> Result<DiceEvaluation, ParsingError>
 where
 	R: RangeRng,
 {
 	let mut rolls = OrderedMap::<RollId, RollGroup>::new();
 
-	let value = evaluate_node(parse_tree, rng, &mut rolls)?.value();
+	let value = evaluate_node(parse_tree, rng, &mut rolls, symbol_table)?.value();
 
 	Ok(DiceEvaluation {
 		value,
@@ -29,6 +30,7 @@ fn evaluate_node<R>(
 	node: Node,
 	rng: &mut R,
 	rolls: &mut OrderedMap<RollId, RollGroup>,
+	symbol_table: &SymbolTable,
 ) -> Result<Operand, ParsingError>
 where
 	R: RangeRng,
@@ -38,15 +40,15 @@ where
 		Node::Leaf(n) => Operand::Number(n),
 		Node::Unary { operator, argument } =>
 		{
-			operator.eval(evaluate_node(*argument, rng, rolls)?, rng)
+			operator.eval(evaluate_node(*argument, rng, rolls, symbol_table)?, rng)
 		}
 		Node::Binary {
 			operator,
 			left,
 			right,
 		} => operator.eval(
-			evaluate_node(*left, rng, rolls)?,
-			evaluate_node(*right, rng, rolls)?,
+			evaluate_node(*left, rng, rolls, &symbol_table)?,
+			evaluate_node(*right, rng, rolls, &symbol_table)?,
 			rng,
 		),
 		Node::ComparisonTernary {
@@ -55,11 +57,12 @@ where
 			dice_right,
 			compare_to,
 		} => comp_operator.eval(
-			evaluate_node(*dice_left, rng, rolls)?,
-			evaluate_node(*dice_right, rng, rolls)?,
-			evaluate_node(*compare_to, rng, rolls)?,
+			evaluate_node(*dice_left, rng, rolls, symbol_table)?,
+			evaluate_node(*dice_right, rng, rolls, symbol_table)?,
+			evaluate_node(*compare_to, rng, rolls, symbol_table)?,
 			rng,
 		),
+		Node::Symbolic(s) => evaluate_node(symbol_table.get(&s).expect(format!("Undefined symbol: {s}").as_str()).clone(), rng, rolls, symbol_table)?,
 	};
 
 	if let Operand::Roll { id, data } = &operand
@@ -153,6 +156,6 @@ mod tests
 	{
 		let mut stream = TokenStream::new(input);
 		let tree = parsing::parse_tree_from(&mut stream)?;
-		evaluate_tree(tree, rand)
+		evaluate_tree(tree, rand, &SymbolTable::new()) // todo: add support for a symbol table in this function
 	}
 }
