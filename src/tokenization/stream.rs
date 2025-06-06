@@ -52,6 +52,7 @@ impl<'a> Iterator for BackingTokenStream<'a>
 					TokenType::OpenDelimiter => Some(Ok(Token::OpenDelimiter)),
 					TokenType::CloseDelimiter => Some(Ok(Token::CloseDelimiter)),
 					TokenType::Whitespace => self.next(),
+					TokenType::Symbol => Some(Ok(Token::Symbol(mtch.as_str().trim_matches(['{', '}']).to_string()))),
 				};
 			}
 		}
