@@ -1,5 +1,6 @@
-use crate::tokenization::{TokenFlags, TokenType};
 use thiserror::Error;
+
+use crate::tokenization::{TokenFlags, TokenType};
 
 /// An error representing any error that can occur while a dice string is being tokenized
 #[derive(Debug, Error, Clone, Copy)]

@@ -1,13 +1,14 @@
 mod flags;
 mod stream;
 
+use std::fmt::Display;
+
 pub use flags::*;
+use lazy_regex::regex;
+use regex::Regex;
 pub use stream::*;
 
 use crate::operator::{CompOperator, OpToken};
-use lazy_regex::regex;
-use regex::Regex;
-use std::fmt::Display;
 
 static TOKEN_TYPES: &[TokenType] = &[
 	TokenType::Number,

@@ -1,6 +1,7 @@
+use std::fmt::Display;
+
 use super::{function, OpToken};
 use crate::{error::InvalidOperatorError, evaluation::Operand, RangeRng};
-use std::fmt::Display;
 
 /// Represents an operator which takes only one [`Operand`] as an argument
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]

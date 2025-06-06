@@ -1,5 +1,6 @@
-use super::{RollGroup, RollId};
 use std::{fmt::Display, ops};
+
+use super::{RollGroup, RollId};
 
 /// An enum representing the two variants of [`Operand`]
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]

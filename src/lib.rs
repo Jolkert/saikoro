@@ -16,12 +16,14 @@ mod parsing;
 mod statistics;
 mod tokenization;
 
+use std::ops::Range;
+
 use error::ParsingError;
-use crate::parsing::Node;
 use evaluation::{DiceEvaluation, SymbolTable};
 use rand::{Rng, RngCore, SeedableRng};
-use std::ops::Range;
 use tokenization::TokenStream;
+
+use crate::parsing::Node;
 
 /// Evaluates a string in format similar to [Standard Dice Notation](https://en.wikipedia.org/wiki/Dice_notation)
 /// evaluated with [`rand::thread_rng`]. Equivalent to [`eval_with_rand`] called with `&mut
@@ -39,30 +41,63 @@ use tokenization::TokenStream;
 /// # Errors
 /// An error variant will be returned if the expression is unable to be parsed, or the evaluation
 /// function produces an error
-pub fn evaluate(input: &str, symbol_table: Option<&SymbolTable>) -> Result<DiceEvaluation, ParsingError>
+pub fn evaluate(
+	input: &str,
+	symbol_table: Option<&SymbolTable>,
+) -> Result<DiceEvaluation, ParsingError>
 {
-	eval_with_rand(input, &mut rand::thread_rng(), symbol_table.unwrap_or(&SymbolTable::new()))
+	eval_with_rand(
+		input,
+		&mut rand::thread_rng(),
+		symbol_table.unwrap_or(&SymbolTable::new()),
+	)
 }
 
 /// A utility wrapper function for seeding a dice roll with the given u64 as the seed
 /// (see [`saikoro::eval_with_rand`][`eval_with_rand`] for more information)
-pub fn eval_with_seed(input: &str, symbol_table: Option<&SymbolTable>, seed: u64) -> Result<DiceEvaluation, ParsingError>
+pub fn eval_with_seed(
+	input: &str,
+	symbol_table: Option<&SymbolTable>,
+	seed: u64,
+) -> Result<DiceEvaluation, ParsingError>
 {
 	let mut seeded_random = rand::rngs::StdRng::seed_from_u64(seed);
-	eval_with_rand(input, &mut seeded_random,symbol_table.unwrap_or(&SymbolTable::new()))
+	eval_with_rand(
+		input,
+		&mut seeded_random,
+		symbol_table.unwrap_or(&SymbolTable::new()),
+	)
 }
 
-pub fn parse_roll(input: &str) -> Result<Node, ParsingError> {
+pub fn parse_roll(input: &str) -> Result<Node, ParsingError>
+{
 	parsing::parse_tree_from(&mut TokenStream::new(input))
 }
 
-pub fn eval_parsed(input: Node, symbol_table: Option<&SymbolTable>) -> Result<DiceEvaluation, ParsingError> {
-	evaluation::evaluate_tree(input, &mut rand::thread_rng(), symbol_table.unwrap_or(&SymbolTable::new()))
+pub fn eval_parsed(
+	input: Node,
+	symbol_table: Option<&SymbolTable>,
+) -> Result<DiceEvaluation, ParsingError>
+{
+	evaluation::evaluate_tree(
+		input,
+		&mut rand::thread_rng(),
+		symbol_table.unwrap_or(&SymbolTable::new()),
+	)
 }
 
-pub fn eval_parsed_with_seed(input: Node, symbol_table: Option<&SymbolTable>, seed: u64) -> Result<DiceEvaluation, ParsingError> {
+pub fn eval_parsed_with_seed(
+	input: Node,
+	symbol_table: Option<&SymbolTable>,
+	seed: u64,
+) -> Result<DiceEvaluation, ParsingError>
+{
 	let mut seeded_random = rand::rngs::StdRng::seed_from_u64(seed);
-	evaluation::evaluate_tree(input, &mut seeded_random, symbol_table.unwrap_or(&SymbolTable::new()))
+	evaluation::evaluate_tree(
+		input,
+		&mut seeded_random,
+		symbol_table.unwrap_or(&SymbolTable::new()),
+	)
 }
 
 /// Evaluates a string in format similar to [Standard Dice Notation](https://en.wikipedia.org/wiki/Dice_notation)
@@ -92,7 +127,11 @@ pub fn eval_parsed_with_seed(input: Node, symbol_table: Option<&SymbolTable>, se
 /// # See Also
 /// For simply seeding a roll with a u64 seed, see [`saikoro::eval_with_seed`][`eval_with_seed`]
 /// [`saikoro::RangeRng`][`RangeRng`]
-pub fn eval_with_rand<R>(input: &str, rand: &mut R, symbol_table: &SymbolTable) -> Result<DiceEvaluation, ParsingError>
+pub fn eval_with_rand<R>(
+	input: &str,
+	rand: &mut R,
+	symbol_table: &SymbolTable,
+) -> Result<DiceEvaluation, ParsingError>
 where
 	R: RangeRng,
 {
@@ -162,8 +201,9 @@ impl<T: RngCore> RangeRng for T
 #[cfg(test)]
 pub(crate) mod test_helpers
 {
-	use crate::{eval_with_rand, parse_roll, eval_parsed, RangeRng, SymbolTable};
 	use std::collections::VecDeque;
+
+	use crate::{eval_parsed, eval_with_rand, parse_roll, RangeRng, SymbolTable};
 
 	pub struct RiggedRandom
 	{
@@ -233,7 +273,12 @@ pub(crate) mod test_helpers
 	#[test]
 	fn rigged_random_test()
 	{
-		let rolls = eval_with_rand("3d6", &mut RiggedRandom::new([3, 5, 2]), &SymbolTable::new()).unwrap();
+		let rolls = eval_with_rand(
+			"3d6",
+			&mut RiggedRandom::new([3, 5, 2]),
+			&SymbolTable::new(),
+		)
+		.unwrap();
 
 		assert_approx_eq!(rolls.value, 10.0);
 		assert_eq!(
@@ -253,66 +298,77 @@ pub(crate) mod test_helpers
 		assert!(symbols.insert("sym2", "-2").is_ok());
 		assert!(symbols.insert("sym3", "d4 - 1").is_ok());
 
-		let roll1 = match parse_roll("d20 + {sym1}") {
+		let roll1 = match parse_roll("d20 + {sym1}")
+		{
 			Ok(n) => eval_parsed(n, Some(&symbols)),
-			Err(e) => panic!("{e:?}")
+			Err(e) => panic!("{e:?}"),
 		};
 
-		let roll2 = match parse_roll("{sym1}d6") {
+		let roll2 = match parse_roll("{sym1}d6")
+		{
 			Ok(n) => eval_parsed(n, Some(&symbols)),
-			Err(e) => panic!("{e:?}")
+			Err(e) => panic!("{e:?}"),
 		};
 
-		let roll3 = match parse_roll("d20 + {sym2}") {
+		let roll3 = match parse_roll("d20 + {sym2}")
+		{
 			Ok(n) => eval_parsed(n, Some(&symbols)),
-			Err(e) => panic!("{e:?}")
+			Err(e) => panic!("{e:?}"),
 		};
 
-		let roll4 = match parse_roll("d20 + {sym3}") {
+		let roll4 = match parse_roll("d20 + {sym3}")
+		{
 			Ok(n) => eval_parsed(n, Some(&symbols)),
-			Err(e) => panic!("{e:?}")
+			Err(e) => panic!("{e:?}"),
 		};
 
-		match roll1 {
-			Ok(d) => {
+		match roll1
+		{
+			Ok(d) =>
+			{
 				let rolls = d.roll_groups;
 				let value = d.value;
 				println!("{rolls:?}");
 				println!("Final value: {value}")
-			},
+			}
 			Err(e) => panic!("{e:?}"),
 		}
 
-		match roll2 {
-			Ok(d) => {
+		match roll2
+		{
+			Ok(d) =>
+			{
 				let rolls = d.roll_groups;
 				let value = d.value;
 				println!("{rolls:?}");
 				println!("Final value: {value}")
-			},
+			}
 			Err(e) => panic!("{e:?}"),
 		}
 
-		match roll3 {
-			Ok(d) => {
+		match roll3
+		{
+			Ok(d) =>
+			{
 				let rolls = d.roll_groups;
 				let value = d.value;
 				println!("{rolls:?}");
 				println!("Final value: {value}")
-			},
+			}
 			Err(e) => panic!("{e:?}"),
 		}
 
-		match roll4 {
-			Ok(d) => {
+		match roll4
+		{
+			Ok(d) =>
+			{
 				let rolls = d.roll_groups;
 				let value = d.value;
 				println!("{rolls:?}");
 				println!("Final value: {value}")
-			},
+			}
 			Err(e) => panic!("{e:?}"),
 		}
-
 	}
 }
 

@@ -46,8 +46,9 @@ fn parse_min_power(
 	context: ParseContext,
 ) -> Result<Node, ParsingError>
 {
-	let mut lhs = match stream
-		.expect(TokenType::Number | TokenType::Operator | TokenType::OpenDelimiter | TokenType::Symbol)?
+	let mut lhs = match stream.expect(
+		TokenType::Number | TokenType::Operator | TokenType::OpenDelimiter | TokenType::Symbol,
+	)?
 	{
 		Token::Number(n) => Node::Leaf(n),
 		Token::Operator(op_token) =>
@@ -65,13 +66,13 @@ fn parse_min_power(
 				operator,
 				argument: Box::new(parse_min_power(stream, operator.binding_power, context)?),
 			}
-		},
+		}
 		Token::OpenDelimiter =>
 		{
 			let value = parse_min_power(stream, 0, context.expect_close_paren())?;
 			stream.consume_expecting(TokenType::CloseDelimiter)?;
 			value
-		},
+		}
 		Token::Symbol(s) => Node::Symbolic(s),
 		_ => unreachable!("stream.expect should prevent this branch from ever occuring"),
 	};

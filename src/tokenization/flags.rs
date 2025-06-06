@@ -1,6 +1,7 @@
+use std::{fmt::Display, ops};
+
 use super::TokenType;
 use crate::tokenization::TOKEN_TYPES;
-use std::{fmt::Display, ops};
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct TokenFlags(u8);

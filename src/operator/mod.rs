@@ -5,12 +5,12 @@ mod comp_op;
 pub(crate) mod function;
 mod unary_op;
 
+use std::{fmt::Display, str::FromStr};
+
 pub use binary_op::*;
 pub use comp_op::*;
-pub use unary_op::*;
-
-use std::{fmt::Display, str::FromStr};
 use thiserror::Error;
+pub use unary_op::*;
 
 /// An enum representing a token which corresponds to an operator
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]

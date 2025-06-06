@@ -1,6 +1,7 @@
+use thiserror::Error;
+
 use super::TokenizationError;
 use crate::operator::{CompOperator, OpToken, UnaryDirection, UnaryOperator};
-use thiserror::Error;
 
 /// An error representing any error that can occur while parsing a dice string (including any
 /// errors which can occur during tokenization)

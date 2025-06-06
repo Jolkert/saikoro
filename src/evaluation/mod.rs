@@ -4,12 +4,13 @@ mod operand;
 mod roll_types;
 mod symbol_table;
 
+use std::{collections::HashMap, hash::Hash};
+
 pub use operand::*;
 pub use roll_types::*;
 pub use symbol_table::*;
 
 use crate::{error::ParsingError, parsing::Node, RangeRng};
-use std::{collections::HashMap, hash::Hash};
 
 pub(super) fn evaluate_tree<R>(
 	parse_tree: Node,
@@ -64,7 +65,15 @@ where
 			evaluate_node(*compare_to, rng, rolls, symbol_table)?,
 			rng,
 		),
-		Node::Symbolic(s) => evaluate_node(symbol_table.get(&s).unwrap_or_else(|| panic!("Undefined symbol: {s}")).clone(), rng, rolls, symbol_table)?,
+		Node::Symbolic(s) => evaluate_node(
+			symbol_table
+				.get(&s)
+				.unwrap_or_else(|| panic!("Undefined symbol: {s}"))
+				.clone(),
+			rng,
+			rolls,
+			symbol_table,
+		)?,
 	};
 
 	if let Operand::Roll { id, data } = &operand
@@ -112,13 +121,14 @@ impl<K: Eq + Hash + Clone, V> OrderedMap<K, V>
 #[cfg(test)]
 mod tests
 {
+	use rand::thread_rng;
+
 	use super::*;
 	use crate::{
 		parsing,
 		test_helpers::{assert_approx_eq, RiggedRandom},
 		tokenization::TokenStream,
 	};
-	use rand::thread_rng;
 
 	#[test]
 	fn deterministic_evaluation()

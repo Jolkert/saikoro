@@ -149,13 +149,14 @@ impl PopulationData
 	{
 		let mean = self.mean();
 		let possibility_counts = self.ways_to_make_all_results();
-		let variance =
-			self.possible_rolls()
-				.map(|value| {
-					(f64::from(value) - mean).powi(2)
-						* possibility_counts[(value - self.count) as usize]
-				})
-				.sum::<f64>() / self.population_size();
+		let variance = self
+			.possible_rolls()
+			.map(|value| {
+				(f64::from(value) - mean).powi(2)
+					* possibility_counts[(value - self.count) as usize]
+			})
+			.sum::<f64>()
+			/ self.population_size();
 
 		variance.sqrt()
 	}
