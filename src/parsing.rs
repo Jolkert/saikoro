@@ -47,7 +47,7 @@ fn parse_min_power(
 ) -> Result<Node, ParsingError>
 {
 	let mut lhs = match stream
-		.expect(TokenType::Number | TokenType::Operator | TokenType::OpenDelimiter)?
+		.expect(TokenType::Number | TokenType::Operator | TokenType::OpenDelimiter | TokenType::Symbol)?
 	{
 		Token::Number(n) => Node::Leaf(n),
 		Token::Operator(op_token) =>

@@ -41,7 +41,7 @@ impl TokenType
 			Self::OpenDelimiter => regex!(r"\("),
 			Self::CloseDelimiter => regex!(r"\)"),
 			Self::Whitespace => regex!(r"\s+"),
-			Self::Symbol => regex!(r"[a-zA-Z_][a-zA-Z_\-\d]*"),
+			Self::Symbol => regex!(r"\{[a-zA-Z_][a-zA-Z_\-\d]*\}"),
 		}
 	}
 

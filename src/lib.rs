@@ -52,7 +52,7 @@ pub fn eval_with_seed(input: &str, symbol_table: Option<&SymbolTable>, seed: u64
 	eval_with_rand(input, &mut seeded_random,symbol_table.unwrap_or(&SymbolTable::new()))
 }
 
-pub fn parse(input: &str) -> Result<Node, ParsingError> {
+pub fn parse_roll(input: &str) -> Result<Node, ParsingError> {
 	parsing::parse_tree_from(&mut TokenStream::new(input))
 }
 
@@ -71,15 +71,12 @@ impl SymbolTable {
 	return SymbolTable(HashMap::<String, Node>::new())
  }
 
- pub fn insert(&mut self, k: String, v: String) {
-	let parsed_exp = parsing::parse_tree_from(&mut TokenStream::new(v.as_str()));
-
-	if parsed_exp.is_ok() {
-		self.0.insert(k, parsed_exp.unwrap());
-		//return Ok(self);
-	} else {
-		//return Err(parsed_exp.unwrap_err());
-	}
+ pub fn insert(&mut self, k: &str, v: &str) -> Result<(), ParsingError>{
+	parsing::parse_tree_from(&mut TokenStream::new(v))
+    .map(|subtree| {
+      self.0.insert(k.to_string(), subtree);
+      ()
+    })
  }
 
  fn get(&self, k: &String) -> Option<Node>{
@@ -96,7 +93,9 @@ impl TryFrom<HashMap<String, String>> for SymbolTable {
 		let mut result = SymbolTable::new();
 
 		for (sym, exp) in str_map {
-			result.insert(sym, exp);
+			if let Err(e) = result.insert(&sym, &exp) {
+				return Err(e);
+			}
 		}
 
 		return Ok(result);
@@ -200,7 +199,7 @@ impl<T: RngCore> RangeRng for T
 #[cfg(test)]
 pub(crate) mod test_helpers
 {
-	use crate::{eval_with_rand, RangeRng, SymbolTable};
+	use crate::{eval_with_rand, parse_roll, eval_parsed, RangeRng, SymbolTable};
 	use std::collections::VecDeque;
 
 	pub struct RiggedRandom
@@ -281,6 +280,76 @@ pub(crate) mod test_helpers
 				.map(|it| it.original_value)
 				.collect::<Vec<_>>()
 		);
+	}
+
+	#[test]
+	fn symbol_test()
+	{
+		let mut symbols = SymbolTable::new();
+		assert!(symbols.insert("sym1", "5").is_ok());
+		assert!(symbols.insert("sym2", "-2").is_ok());
+		assert!(symbols.insert("sym3", "d4 - 1").is_ok());
+
+		let roll1 = match parse_roll("d20 + {sym1}") {
+			Ok(n) => eval_parsed(n, Some(&symbols)),
+			Err(e) => panic!("{e:?}")
+		};
+
+		let roll2 = match parse_roll("{sym1}d6") {
+			Ok(n) => eval_parsed(n, Some(&symbols)),
+			Err(e) => panic!("{e:?}")
+		};
+
+		let roll3 = match parse_roll("d20 + {sym2}") {
+			Ok(n) => eval_parsed(n, Some(&symbols)),
+			Err(e) => panic!("{e:?}")
+		};
+
+		let roll4 = match parse_roll("d20 + {sym3}") {
+			Ok(n) => eval_parsed(n, Some(&symbols)),
+			Err(e) => panic!("{e:?}")
+		};
+
+		match roll1 {
+			Ok(d) => {
+				let rolls = d.roll_groups;
+				let value = d.value;
+				println!("{rolls:?}");
+				println!("Final value: {value}")
+			},
+			Err(e) => panic!("{e:?}"),
+		}
+
+		match roll2 {
+			Ok(d) => {
+				let rolls = d.roll_groups;
+				let value = d.value;
+				println!("{rolls:?}");
+				println!("Final value: {value}")
+			},
+			Err(e) => panic!("{e:?}"),
+		}
+
+		match roll3 {
+			Ok(d) => {
+				let rolls = d.roll_groups;
+				let value = d.value;
+				println!("{rolls:?}");
+				println!("Final value: {value}")
+			},
+			Err(e) => panic!("{e:?}"),
+		}
+
+		match roll4 {
+			Ok(d) => {
+				let rolls = d.roll_groups;
+				let value = d.value;
+				println!("{rolls:?}");
+				println!("Final value: {value}")
+			},
+			Err(e) => panic!("{e:?}"),
+		}
+
 	}
 }
 
