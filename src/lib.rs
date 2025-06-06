@@ -18,9 +18,9 @@ mod tokenization;
 
 use error::ParsingError;
 use crate::parsing::Node;
-use evaluation::DiceEvaluation;
+use evaluation::{DiceEvaluation, SymbolTable};
 use rand::{Rng, RngCore, SeedableRng};
-use std::{ops::Range, collections::HashMap};
+use std::ops::Range;
 use tokenization::TokenStream;
 
 /// Evaluates a string in format similar to [Standard Dice Notation](https://en.wikipedia.org/wiki/Dice_notation)
@@ -63,43 +63,6 @@ pub fn eval_parsed(input: Node, symbol_table: Option<&SymbolTable>) -> Result<Di
 pub fn eval_parsed_with_seed(input: Node, symbol_table: Option<&SymbolTable>, seed: u64) -> Result<DiceEvaluation, ParsingError> {
 	let mut seeded_random = rand::rngs::StdRng::seed_from_u64(seed);
 	evaluation::evaluate_tree(input, &mut seeded_random, symbol_table.unwrap_or(&SymbolTable::new()))
-}
-pub struct SymbolTable(HashMap<String, Node>);
-
-impl SymbolTable {
- pub fn new() -> Self {
-	return SymbolTable(HashMap::<String, Node>::new())
- }
-
- pub fn insert(&mut self, k: &str, v: &str) -> Result<(), ParsingError>{
-	parsing::parse_tree_from(&mut TokenStream::new(v))
-    .map(|subtree| {
-      self.0.insert(k.to_string(), subtree);
-      ()
-    })
- }
-
- fn get(&self, k: &String) -> Option<Node>{
-	self.0.get(k).cloned()
- }
-
-}
-
-impl TryFrom<HashMap<String, String>> for SymbolTable {
-
-	type Error = ParsingError;
-
-	fn try_from(str_map: HashMap<String, String>) -> Result<Self, Self::Error> {
-		let mut result = SymbolTable::new();
-
-		for (sym, exp) in str_map {
-			if let Err(e) = result.insert(&sym, &exp) {
-				return Err(e);
-			}
-		}
-
-		return Ok(result);
-	}
 }
 
 /// Evaluates a string in format similar to [Standard Dice Notation](https://en.wikipedia.org/wiki/Dice_notation)

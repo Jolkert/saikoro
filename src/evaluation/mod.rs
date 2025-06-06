@@ -2,11 +2,13 @@
 
 mod operand;
 mod roll_types;
+mod symbol_table;
 
 pub use operand::*;
 pub use roll_types::*;
+pub use symbol_table::*;
 
-use crate::{error::ParsingError, parsing::Node, RangeRng, SymbolTable};
+use crate::{error::ParsingError, parsing::Node, RangeRng};
 use std::{collections::HashMap, hash::Hash};
 
 pub(super) fn evaluate_tree<R>(
@@ -47,8 +49,8 @@ where
 			left,
 			right,
 		} => operator.eval(
-			evaluate_node(*left, rng, rolls, &symbol_table)?,
-			evaluate_node(*right, rng, rolls, &symbol_table)?,
+			evaluate_node(*left, rng, rolls, symbol_table)?,
+			evaluate_node(*right, rng, rolls, symbol_table)?,
 			rng,
 		),
 		Node::ComparisonTernary {
@@ -62,7 +64,7 @@ where
 			evaluate_node(*compare_to, rng, rolls, symbol_table)?,
 			rng,
 		),
-		Node::Symbolic(s) => evaluate_node(symbol_table.get(&s).expect(format!("Undefined symbol: {s}").as_str()).clone(), rng, rolls, symbol_table)?,
+		Node::Symbolic(s) => evaluate_node(symbol_table.get(&s).unwrap_or_else(|| panic!("Undefined symbol: {s}")).clone(), rng, rolls, symbol_table)?,
 	};
 
 	if let Operand::Roll { id, data } = &operand
