@@ -33,19 +33,29 @@ impl Default for SymbolTable
 	}
 }
 
+impl From<HashMap<String, Node>> for SymbolTable
+{
+	fn from(value: HashMap<String, Node>) -> Self
+	{
+		Self(value)
+	}
+}
+
 impl TryFrom<HashMap<String, String>> for SymbolTable
 {
 	type Error = ParsingError;
 
 	fn try_from(str_map: HashMap<String, String>) -> Result<Self, Self::Error>
 	{
-		let mut result = Self::new();
-
-		for (sym, exp) in str_map
-		{
-			result.insert(&sym, &exp)?;
-		}
-
-		Ok(result)
+		str_map
+			.into_iter()
+			.map(|(symbol, expr)| {
+				Ok((
+					symbol,
+					parsing::parse_tree_from(&mut TokenStream::new(&expr))?,
+				))
+			})
+			.collect::<Result<HashMap<_, _>, _>>()
+			.map(Self::from)
 	}
 }
