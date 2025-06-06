@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use crate::{parsing, tokenization::TokenStream, Node, ParsingError};
 
+#[derive(Debug, Clone)]
 pub struct SymbolTable(HashMap<String, Node>);
 
 impl SymbolTable
