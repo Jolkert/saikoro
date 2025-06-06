@@ -8,7 +8,7 @@ impl SymbolTable
 {
 	pub fn new() -> Self
 	{
-		SymbolTable(HashMap::<String, Node>::new())
+		Self(HashMap::<String, Node>::new())
 	}
 
 	pub fn insert(&mut self, k: &str, v: &str) -> Result<(), ParsingError>
@@ -38,11 +38,11 @@ impl TryFrom<HashMap<String, String>> for SymbolTable
 
 	fn try_from(str_map: HashMap<String, String>) -> Result<Self, Self::Error>
 	{
-		let mut result = SymbolTable::new();
+		let mut result = Self::new();
 
 		for (sym, exp) in str_map
 		{
-			result.insert(&sym, &exp)?
+			result.insert(&sym, &exp)?;
 		}
 
 		Ok(result)

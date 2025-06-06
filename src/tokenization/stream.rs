@@ -19,7 +19,7 @@ impl<'a> BackingTokenStream<'a>
 		}
 	}
 }
-impl<'a> Iterator for BackingTokenStream<'a>
+impl Iterator for BackingTokenStream<'_>
 {
 	type Item = Result<Token, TokenizationError>;
 	fn next(&mut self) -> Option<Self::Item>
@@ -137,7 +137,7 @@ impl<'a> TokenStream<'a>
 		self.expect(token_type).map(|_| ())
 	}
 }
-impl<'a> Iterator for TokenStream<'a>
+impl Iterator for TokenStream<'_>
 {
 	type Item = Result<Token, TokenizationError>;
 	fn next(&mut self) -> Option<Self::Item>

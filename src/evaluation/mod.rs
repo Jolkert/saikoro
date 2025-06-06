@@ -68,8 +68,7 @@ where
 		Node::Symbolic(s) => evaluate_node(
 			symbol_table
 				.get(&s)
-				.unwrap_or_else(|| panic!("Undefined symbol: {s}"))
-				.clone(),
+				.unwrap_or_else(|| panic!("Undefined symbol: {s}")),
 			rng,
 			rolls,
 			symbol_table,

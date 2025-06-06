@@ -79,12 +79,12 @@ impl RollGroup
 	/// assert_eq!(iter.next(), Some(&Roll::new(2)));
 	/// assert_eq!(iter.next(), None);
 	/// ```
-	pub fn iter(&self) -> std::slice::Iter<Roll>
+	pub fn iter(&self) -> std::slice::Iter<'_, Roll>
 	{
 		self.rolls.iter()
 	}
 
-	pub(crate) fn iter_mut(&mut self) -> std::slice::IterMut<Roll>
+	pub(crate) fn iter_mut(&mut self) -> std::slice::IterMut<'_, Roll>
 	{
 		self.rolls.iter_mut()
 	}
@@ -203,7 +203,7 @@ impl Roll
 		self.removed = true;
 	}
 
-	/// Marks the [`Roll`] as removed unless the `predicate` returns `true`  
+	/// Marks the [`Roll`] as removed unless the `predicate` returns `true`\
 	/// Effectively a no-op on a roll which is alread marked "removed"
 	pub fn remove_unless<F>(&mut self, predicate: F)
 	where
@@ -236,7 +236,14 @@ impl Display for Roll
 {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result
 	{
-		let wrap_str = self.is_removed().then_some("~~").unwrap_or_default();
+		let wrap_str = if self.is_removed()
+		{
+			"~~"
+		}
+		else
+		{
+			Default::default()
+		};
 		write!(f, "{}{}{}", wrap_str, self.original_value, wrap_str)
 	}
 }

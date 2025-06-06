@@ -84,7 +84,7 @@ impl Operand
 		}
 	}
 
-	/// The same as [`value`][`Operand::value``], but consumes `self`  
+	/// The same as [`value`][`Operand::value``], but consumes `self`\
 	/// (see [`value`][`Operand::value`] for details)
 	pub fn into_value(self) -> f64
 	{
@@ -109,7 +109,7 @@ impl Operand
 		Self::Number(self.value())
 	}
 
-	/// The same as [`to_number`][`Operand::to_number``], but consumes `self`  
+	/// The same as [`to_number`][`Operand::to_number``], but consumes `self`\
 	/// (see [`to_number`][`Operand::to_number`] for details)
 	#[must_use]
 	pub fn into_number(self) -> Self

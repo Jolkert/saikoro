@@ -25,6 +25,10 @@ use tokenization::TokenStream;
 
 use crate::parsing::Node;
 
+// clippy you dont know shit (i think it literally just doesn't like the wikipedia link being so
+// long)
+// -morgan 2025-06-06
+#[allow(clippy::too_long_first_doc_paragraph)]
 /// Evaluates a string in format similar to [Standard Dice Notation](https://en.wikipedia.org/wiki/Dice_notation)
 /// evaluated with [`rand::thread_rng`]. Equivalent to [`eval_with_rand`] called with `&mut
 /// rand::thread_rng()` as the second parameter
@@ -46,11 +50,24 @@ pub fn evaluate(
 	symbol_table: Option<&SymbolTable>,
 ) -> Result<DiceEvaluation, ParsingError>
 {
-	eval_with_rand(
-		input,
-		&mut rand::thread_rng(),
-		symbol_table.unwrap_or(&SymbolTable::new()),
-	)
+	// so unfortunately i think this actually *is* the best way to write this without
+	// having to construct a new empty symbol table every time. if you tried
+	// to do it inline in the function call or with `unwrap_or_else` the lifetimes
+	// simply dont work out to allow it.
+	// so as much as this really hurts my soul, i think this is how were gonna write it
+	// -morgan 2025-06-06
+
+	// I think this way looks better than the alternative thank you very much clippy
+	// -morgan 2025-06-06
+	#[allow(clippy::option_if_let_else)]
+	if let Some(symbol_table) = symbol_table
+	{
+		eval_with_rand(input, &mut rand::thread_rng(), symbol_table)
+	}
+	else
+	{
+		eval_with_rand(input, &mut rand::thread_rng(), &SymbolTable::default())
+	}
 }
 
 /// A utility wrapper function for seeding a dice roll with the given u64 as the seed
@@ -62,11 +79,16 @@ pub fn eval_with_seed(
 ) -> Result<DiceEvaluation, ParsingError>
 {
 	let mut seeded_random = rand::rngs::StdRng::seed_from_u64(seed);
-	eval_with_rand(
-		input,
-		&mut seeded_random,
-		symbol_table.unwrap_or(&SymbolTable::new()),
-	)
+
+	#[allow(clippy::option_if_let_else)]
+	if let Some(symbol_table) = symbol_table
+	{
+		eval_with_rand(input, &mut seeded_random, symbol_table)
+	}
+	else
+	{
+		eval_with_rand(input, &mut seeded_random, &SymbolTable::default())
+	}
 }
 
 pub fn parse_roll(input: &str) -> Result<Node, ParsingError>
@@ -79,11 +101,15 @@ pub fn eval_parsed(
 	symbol_table: Option<&SymbolTable>,
 ) -> Result<DiceEvaluation, ParsingError>
 {
-	evaluation::evaluate_tree(
-		input,
-		&mut rand::thread_rng(),
-		symbol_table.unwrap_or(&SymbolTable::new()),
-	)
+	#[allow(clippy::option_if_let_else)]
+	if let Some(symbol_table) = symbol_table
+	{
+		evaluation::evaluate_tree(input, &mut rand::thread_rng(), symbol_table)
+	}
+	else
+	{
+		evaluation::evaluate_tree(input, &mut rand::thread_rng(), &SymbolTable::default())
+	}
 }
 
 pub fn eval_parsed_with_seed(
@@ -93,11 +119,15 @@ pub fn eval_parsed_with_seed(
 ) -> Result<DiceEvaluation, ParsingError>
 {
 	let mut seeded_random = rand::rngs::StdRng::seed_from_u64(seed);
-	evaluation::evaluate_tree(
-		input,
-		&mut seeded_random,
-		symbol_table.unwrap_or(&SymbolTable::new()),
-	)
+
+	if let Some(symbol_table) = symbol_table
+	{
+		evaluation::evaluate_tree(input, &mut seeded_random, symbol_table)
+	}
+	else
+	{
+		evaluation::evaluate_tree(input, &mut seeded_random, &SymbolTable::new())
+	}
 }
 
 /// Evaluates a string in format similar to [Standard Dice Notation](https://en.wikipedia.org/wiki/Dice_notation)
@@ -143,7 +173,9 @@ where
 }
 
 /// A utility trait for allowing flexibility for testing or rigging saikoro's random number
-/// generation. All implementers of [`rand::RngCore`] (i.e. all RNGs from the [`rand`] therefore
+/// generation.
+/// # Implementation Notes
+/// All implementers of [`rand::RngCore`] (i.e. all RNGs from the [`rand`] therefore
 /// ones one is likely to use) get an implementation of this trait for free, so most will not need
 /// to implement this trait, but it is availale publicly for those who do
 /// # Examples
@@ -291,6 +323,7 @@ pub(crate) mod test_helpers
 	}
 
 	#[test]
+	#[allow(clippy::similar_names)]
 	fn symbol_test()
 	{
 		let mut symbols = SymbolTable::new();
@@ -329,7 +362,7 @@ pub(crate) mod test_helpers
 				let rolls = d.roll_groups;
 				let value = d.value;
 				println!("{rolls:?}");
-				println!("Final value: {value}")
+				println!("Final value: {value}");
 			}
 			Err(e) => panic!("{e:?}"),
 		}
@@ -341,7 +374,7 @@ pub(crate) mod test_helpers
 				let rolls = d.roll_groups;
 				let value = d.value;
 				println!("{rolls:?}");
-				println!("Final value: {value}")
+				println!("Final value: {value}");
 			}
 			Err(e) => panic!("{e:?}"),
 		}
@@ -353,7 +386,7 @@ pub(crate) mod test_helpers
 				let rolls = d.roll_groups;
 				let value = d.value;
 				println!("{rolls:?}");
-				println!("Final value: {value}")
+				println!("Final value: {value}");
 			}
 			Err(e) => panic!("{e:?}"),
 		}
@@ -365,7 +398,7 @@ pub(crate) mod test_helpers
 				let rolls = d.roll_groups;
 				let value = d.value;
 				println!("{rolls:?}");
-				println!("Final value: {value}")
+				println!("Final value: {value}");
 			}
 			Err(e) => panic!("{e:?}"),
 		}
