@@ -108,6 +108,7 @@ where
 		Node::Symbolic(s) => evaluate_node(
 			symbol_table
 				.get(&s)
+				.cloned()
 				.ok_or_else(|| MissingSymbolError::from(s))?,
 			rng,
 			rolls,

@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::{parsing, tokenization::TokenStream, Node, ParsingError};
+use crate::{Node, ParsingError, parsing, tokenization::TokenStream};
 
 #[derive(Debug, Clone)]
 pub struct SymbolTable(HashMap<String, Node>);
@@ -19,9 +19,9 @@ impl SymbolTable
 		})
 	}
 
-	pub fn get(&self, k: &String) -> Option<Node>
+	pub fn get(&self, k: &String) -> Option<&Node>
 	{
-		self.0.get(k).cloned()
+		self.0.get(k)
 	}
 }
 
