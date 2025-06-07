@@ -1,11 +1,9 @@
-use thiserror::Error;
-
 use super::TokenizationError;
 use crate::operator::{CompOperator, OpToken, UnaryDirection, UnaryOperator};
 
 /// An error representing any error that can occur while parsing a dice string (including any
 /// errors which can occur during tokenization)
-#[derive(Debug, Error, Clone, Copy)]
+#[derive(Debug, thiserror::Error, Clone, Copy)]
 pub enum ParsingError
 {
 	#[error("{}", .0)]
@@ -27,7 +25,7 @@ pub enum ParsingError
 /// # Usage Notes
 /// As of version 1.0, no postfix unary operators are yet implemented and therefore this error
 /// cannot yet occur. However, there are plans to implement them, so this error exists preemptively.
-#[derive(Debug, Error, Clone, Copy)]
+#[derive(Debug, thiserror::Error, Clone, Copy)]
 #[error("Expected {} operator, found {:?}", .expected_direction, .operator)]
 pub struct UnaryWrongDirectionError
 {
@@ -36,16 +34,16 @@ pub struct UnaryWrongDirectionError
 }
 
 /// An error representing an operator that cannot be used as a unary operator
-#[derive(Debug, Error, Clone, Copy)]
+#[derive(Debug, thiserror::Error, Clone, Copy)]
 #[error("Failed to convert {} to unary operator!", .0)]
 pub struct InvalidOperatorError(pub OpToken);
 
 /// An error representing a found closing parenthesis without a matching open parenthesis
-#[derive(Debug, Error, Clone, Copy)]
+#[derive(Debug, thiserror::Error, Clone, Copy)]
 #[error("Found closing parenthesis not matching any open!")]
 pub struct UnmatchedCloseDelimiterError;
 
 /// An error representing a found comparison operator without a matching dice operator
-#[derive(Debug, Error, Clone, Copy)]
+#[derive(Debug, thiserror::Error, Clone, Copy)]
 #[error("Found comparison operator `{}` without a matching dice operator!", .0)]
 pub struct UnmatchedComparisonError(pub CompOperator);

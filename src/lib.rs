@@ -1,7 +1,7 @@
 //! A parser and evaluator for dice notation expression
 //! # Basic Usage example
 //! ```rust
-//! # fn main() -> Result<(), saikoro::error::ParsingError> {
+//! # fn main() -> Result<(), saikoro::error::SaikoroError> {
 //! // roll for fireball damage
 //! let damage = saikoro::evaluate("8d6")?;
 //! println!("Fireball deals {} fire damage", damage.value);
@@ -23,7 +23,7 @@ use evaluation::{DiceEvaluation, SymbolTable};
 use rand::{Rng, RngCore, SeedableRng};
 use tokenization::TokenStream;
 
-use crate::parsing::Node;
+use crate::{error::SaikoroError, parsing::Node};
 
 // clippy you dont know shit (i think it literally just doesn't like the wikipedia link being so
 // long)
@@ -34,7 +34,7 @@ use crate::parsing::Node;
 /// rand::thread_rng()` as the second parameter
 /// # Examples
 /// ```rust
-/// # fn main() -> Result<(), saikoro::error::ParsingError> {
+/// # fn main() -> Result<(), saikoro::error::SaikoroError> {
 /// let evaluation = saikoro::evaluate("2d6")?;
 /// let final_value = evaluation.value;
 /// // the result of rolling 2d6 will be between 2 and 12
@@ -45,7 +45,7 @@ use crate::parsing::Node;
 /// # Errors
 /// An error variant will be returned if the expression is unable to be parsed, or the evaluation
 /// function produces an error
-pub fn evaluate(input: &str) -> Result<DiceEvaluation, ParsingError>
+pub fn evaluate(input: &str) -> Result<DiceEvaluation, SaikoroError>
 {
 	eval_with_rand(input, &mut rand::rng(), Some(&SymbolTable::default()))
 }
@@ -53,7 +53,7 @@ pub fn evaluate(input: &str) -> Result<DiceEvaluation, ParsingError>
 pub fn eval_with_symbols(
 	input: &str,
 	symbol_table: &SymbolTable,
-) -> Result<DiceEvaluation, ParsingError>
+) -> Result<DiceEvaluation, SaikoroError>
 {
 	eval_with_rand(input, &mut rand::rng(), Some(symbol_table))
 }
@@ -64,7 +64,7 @@ pub fn eval_with_seed(
 	input: &str,
 	seed: u64,
 	symbol_table: Option<&SymbolTable>,
-) -> Result<DiceEvaluation, ParsingError>
+) -> Result<DiceEvaluation, SaikoroError>
 {
 	let mut seeded_random = rand::rngs::StdRng::seed_from_u64(seed);
 	eval_with_rand(input, &mut seeded_random, symbol_table)
@@ -74,7 +74,7 @@ pub fn eval_with_seed(
 /// evaluated with the given [`RangeRng`]
 /// # Examples
 /// ```rust
-/// # fn main() -> Result<(), saikoro::error::ParsingError>
+/// # fn main() -> Result<(), saikoro::error::SaikoroError>
 /// # {
 /// use rand::{rngs::StdRng, SeedableRng};
 ///
@@ -101,7 +101,7 @@ pub fn eval_with_rand<R>(
 	input: &str,
 	rand: &mut R,
 	symbol_table: Option<&SymbolTable>,
-) -> Result<DiceEvaluation, ParsingError>
+) -> Result<DiceEvaluation, SaikoroError>
 where
 	R: RangeRng,
 {
@@ -112,7 +112,7 @@ where
 	// so as much as this really hurts my soul, i think this is how were gonna write it
 	// -morgan 2025-06-06
 
-	if let Some(symbol_table) = symbol_table
+	Ok((if let Some(symbol_table) = symbol_table
 	{
 		evaluation::evaluate_tree_internal(
 			parsing::parse_tree_from(&mut TokenStream::new(input))?,
@@ -127,7 +127,7 @@ where
 			rand,
 			&SymbolTable::default(),
 		)
-	}
+	})?)
 }
 
 /// A utility trait for allowing flexibility for testing or rigging saikoro's random number

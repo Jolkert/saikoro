@@ -11,13 +11,13 @@ use rand::SeedableRng;
 pub use roll_types::*;
 pub use symbol_table::*;
 
-use crate::{error::ParsingError, parsing::Node, RangeRng};
+use crate::{RangeRng, error::MissingSymbolError, parsing::Node};
 
 // TODO: docs
 pub fn eval_tree(
 	parsed_tree: Node,
 	symbol_table: Option<&SymbolTable>,
-) -> Result<DiceEvaluation, ParsingError>
+) -> Result<DiceEvaluation, MissingSymbolError>
 {
 	if let Some(symbol_table) = symbol_table
 	{
@@ -34,7 +34,7 @@ pub fn eval_tree_with_seed(
 	parsed_tree: Node,
 	seed: u64,
 	symbol_table: Option<&SymbolTable>,
-) -> Result<DiceEvaluation, ParsingError>
+) -> Result<DiceEvaluation, MissingSymbolError>
 {
 	let mut seeded_random = rand::rngs::StdRng::seed_from_u64(seed);
 
@@ -53,7 +53,7 @@ pub fn eval_tree_with_rand<R>(
 	parsed_tree: Node,
 	rng: &mut R,
 	symbol_table: Option<&SymbolTable>,
-) -> Result<DiceEvaluation, ParsingError>
+) -> Result<DiceEvaluation, MissingSymbolError>
 where
 	R: RangeRng,
 {
@@ -71,7 +71,7 @@ pub(super) fn evaluate_tree_internal<R>(
 	parse_tree: Node,
 	rng: &mut R,
 	symbol_table: &SymbolTable,
-) -> Result<DiceEvaluation, ParsingError>
+) -> Result<DiceEvaluation, MissingSymbolError>
 where
 	R: RangeRng,
 {
@@ -89,7 +89,7 @@ fn evaluate_node<R>(
 	rng: &mut R,
 	rolls: &mut OrderedMap<RollId, RollGroup>,
 	symbol_table: &SymbolTable,
-) -> Result<Operand, ParsingError>
+) -> Result<Operand, MissingSymbolError>
 where
 	R: RangeRng,
 {
@@ -123,7 +123,7 @@ where
 		Node::Symbolic(s) => evaluate_node(
 			symbol_table
 				.get(&s)
-				.unwrap_or_else(|| panic!("Undefined symbol: {s}")),
+				.ok_or_else(|| MissingSymbolError::from(s))?,
 			rng,
 			rolls,
 			symbol_table,
@@ -178,8 +178,9 @@ mod tests
 
 	use super::*;
 	use crate::{
+		error::SaikoroError,
 		parsing,
-		test_helpers::{assert_approx_eq, RiggedRandom},
+		test_helpers::{RiggedRandom, assert_approx_eq},
 		tokenization::TokenStream,
 	};
 
@@ -212,15 +213,15 @@ mod tests
 		eval_str_rand(input, rand).unwrap_or_else(|_| panic!("Could not evaluate `{input}`"))
 	}
 
-	fn eval_str(input: &str) -> Result<DiceEvaluation, ParsingError>
+	fn eval_str(input: &str) -> Result<DiceEvaluation, SaikoroError>
 	{
 		eval_str_rand(input, &mut rand::rng())
 	}
 	fn eval_str_rand<R: RangeRng>(input: &str, rand: &mut R)
-		-> Result<DiceEvaluation, ParsingError>
+	-> Result<DiceEvaluation, SaikoroError>
 	{
 		let mut stream = TokenStream::new(input);
 		let tree = parsing::parse_tree_from(&mut stream)?;
-		evaluate_tree_internal(tree, rand, &SymbolTable::new()) // todo: add support for a symbol table in this function
+		Ok(evaluate_tree_internal(tree, rand, &SymbolTable::new())?) // todo: add support for a symbol table in this function
 	}
 }
