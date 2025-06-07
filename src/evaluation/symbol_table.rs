@@ -55,7 +55,14 @@ impl TryFrom<HashMap<String, String>> for SymbolTable
 					parsing::parse_tree_from(&mut TokenStream::new(&expr))?,
 				))
 			})
-			.collect::<Result<HashMap<_, _>, _>>()
-			.map(Self::from)
+			.collect()
+	}
+}
+
+impl FromIterator<(String, Node)> for SymbolTable
+{
+	fn from_iter<T: IntoIterator<Item = (String, Node)>>(iter: T) -> Self
+	{
+		Self(iter.into_iter().collect())
 	}
 }
