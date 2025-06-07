@@ -23,3 +23,20 @@ lazy_static = "1.4.0"
 rand = "0.9.1"
 regex = "1.9.4"
 thiserror = "1.0.51"
+
+[lints.clippy]
+pedantic = "warn"
+nursery = "warn"
+empty_structs_with_brackets = "warn"
+if_then_some_else_none = "warn"
+same_name_method = "warn"
+lossy_float_literal = "warn"
+
+missing_const_for_fn = {level = "allow", priority = 1}
+cast_possible_truncation = {level = "allow", priority = 1}
+missing-errors-doc = {level = "allow", priority = 1}
+module_name_repetitions = {level = "allow", priority = 1}
+must-use-candidate = {level = "allow", priority = 1}
+trivial-regex = {level = "allow", priority = 1}
+neg_cmp_op_on_partial_ord = {level = "allow", priority = 1}
+match-wildcard-for-single-variants = {level = "allow", priority = 1}

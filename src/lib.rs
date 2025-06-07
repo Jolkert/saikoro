@@ -238,9 +238,6 @@ pub(crate) mod test_helpers
 			{
 				(left_val, right_val) =>
 				{
-				    // sorry clippy. no thanks
-				    // -morgan 2025-06-07
-				    #[allow(clippy::neg_cmp_op_on_partial_ord)]
 					if !(f64::abs(*left_val - *right_val) < f64::EPSILON)
 					{
 						std::panic!("assertion that `left` approx equals `right` failed\nleft: {}\nright: {}", &*left_val, &*right_val);
