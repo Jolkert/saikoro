@@ -207,7 +207,7 @@ mod tests
 		assert!(super::add(
 			Operand::Number(12.0),
 			Operand::Number(3.0),
-			&mut rand::thread_rng(),
+			&mut rand::rng(),
 		)
 		.approx_eq(&Operand::Number(15.0)));
 	}
@@ -217,7 +217,7 @@ mod tests
 		assert!(super::subtract(
 			Operand::Number(12.0),
 			Operand::Number(3.0),
-			&mut rand::thread_rng(),
+			&mut rand::rng(),
 		)
 		.approx_eq(&Operand::Number(9.0)));
 	}
@@ -227,7 +227,7 @@ mod tests
 		assert!(super::multiply(
 			Operand::Number(12.0),
 			Operand::Number(3.0),
-			&mut rand::thread_rng(),
+			&mut rand::rng(),
 		)
 		.approx_eq(&Operand::Number(36.0)));
 	}
@@ -237,7 +237,7 @@ mod tests
 		assert!(super::divide(
 			Operand::Number(12.0),
 			Operand::Number(3.0),
-			&mut rand::thread_rng(),
+			&mut rand::rng(),
 		)
 		.approx_eq(&Operand::Number(4.0)));
 	}
@@ -247,7 +247,7 @@ mod tests
 		assert!(super::modulo(
 			Operand::Number(12.0),
 			Operand::Number(3.0),
-			&mut rand::thread_rng(),
+			&mut rand::rng(),
 		)
 		.approx_eq(&Operand::Number(0.0)));
 	}
@@ -257,7 +257,7 @@ mod tests
 		assert!(super::power(
 			Operand::Number(12.0),
 			Operand::Number(3.0),
-			&mut rand::thread_rng(),
+			&mut rand::rng(),
 		)
 		.approx_eq(&Operand::Number(1728.0)));
 	}

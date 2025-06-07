@@ -21,15 +21,11 @@ pub fn eval_tree(
 {
 	if let Some(symbol_table) = symbol_table
 	{
-		evaluate_tree_internal(parsed_tree, &mut rand::thread_rng(), symbol_table)
+		evaluate_tree_internal(parsed_tree, &mut rand::rng(), symbol_table)
 	}
 	else
 	{
-		evaluate_tree_internal(
-			parsed_tree,
-			&mut rand::thread_rng(),
-			&SymbolTable::default(),
-		)
+		evaluate_tree_internal(parsed_tree, &mut rand::rng(), &SymbolTable::default())
 	}
 }
 
@@ -179,7 +175,6 @@ impl<K: Eq + Hash + Clone, V> OrderedMap<K, V>
 #[cfg(test)]
 mod tests
 {
-	use rand::thread_rng;
 
 	use super::*;
 	use crate::{
@@ -219,7 +214,7 @@ mod tests
 
 	fn eval_str(input: &str) -> Result<DiceEvaluation, ParsingError>
 	{
-		eval_str_rand(input, &mut thread_rng())
+		eval_str_rand(input, &mut rand::rng())
 	}
 	fn eval_str_rand<R: RangeRng>(input: &str, rand: &mut R)
 		-> Result<DiceEvaluation, ParsingError>

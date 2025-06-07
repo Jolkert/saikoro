@@ -47,11 +47,7 @@ use crate::parsing::Node;
 /// function produces an error
 pub fn evaluate(input: &str) -> Result<DiceEvaluation, ParsingError>
 {
-	eval_with_rand(
-		input,
-		&mut rand::thread_rng(),
-		Some(&SymbolTable::default()),
-	)
+	eval_with_rand(input, &mut rand::rng(), Some(&SymbolTable::default()))
 }
 
 pub fn eval_with_symbols(
@@ -59,7 +55,7 @@ pub fn eval_with_symbols(
 	symbol_table: &SymbolTable,
 ) -> Result<DiceEvaluation, ParsingError>
 {
-	eval_with_rand(input, &mut rand::thread_rng(), Some(symbol_table))
+	eval_with_rand(input, &mut rand::rng(), Some(symbol_table))
 }
 
 /// A utility wrapper function for seeding a dice roll with the given u64 as the seed
@@ -188,7 +184,7 @@ impl<T: RngCore> RangeRng for T
 	#[doc(hidden)]
 	fn rng_range(&mut self, range: Range<u32>) -> u32
 	{
-		self.gen_range(range)
+		self.random_range(range)
 	}
 }
 
@@ -242,6 +238,9 @@ pub(crate) mod test_helpers
 			{
 				(left_val, right_val) =>
 				{
+				    // sorry clippy. no thanks
+				    // -morgan 2025-06-07
+				    #[allow(clippy::neg_cmp_op_on_partial_ord)]
 					if !(f64::abs(*left_val - *right_val) < f64::EPSILON)
 					{
 						std::panic!("assertion that `left` approx equals `right` failed\nleft: {}\nright: {}", &*left_val, &*right_val);
