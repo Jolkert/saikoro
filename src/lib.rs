@@ -45,29 +45,21 @@ use crate::parsing::Node;
 /// # Errors
 /// An error variant will be returned if the expression is unable to be parsed, or the evaluation
 /// function produces an error
-pub fn evaluate(
+pub fn evaluate(input: &str) -> Result<DiceEvaluation, ParsingError>
+{
+	eval_with_rand(
+		input,
+		&mut rand::thread_rng(),
+		Some(&SymbolTable::default()),
+	)
+}
+
+pub fn eval_with_symbols(
 	input: &str,
-	symbol_table: Option<&SymbolTable>,
+	symbol_table: &SymbolTable,
 ) -> Result<DiceEvaluation, ParsingError>
 {
-	// so unfortunately i think this actually *is* the best way to write this without
-	// having to construct a new empty symbol table every time. if you tried
-	// to do it inline in the function call or with `unwrap_or_else` the lifetimes
-	// simply dont work out to allow it.
-	// so as much as this really hurts my soul, i think this is how were gonna write it
-	// -morgan 2025-06-06
-
-	// I think this way looks better than the alternative thank you very much clippy
-	// -morgan 2025-06-06
-	#[allow(clippy::option_if_let_else)]
-	if let Some(symbol_table) = symbol_table
-	{
-		eval_with_rand(input, &mut rand::thread_rng(), symbol_table)
-	}
-	else
-	{
-		eval_with_rand(input, &mut rand::thread_rng(), &SymbolTable::default())
-	}
+	eval_with_rand(input, &mut rand::thread_rng(), Some(symbol_table))
 }
 
 /// A utility wrapper function for seeding a dice roll with the given u64 as the seed
@@ -79,15 +71,7 @@ pub fn eval_with_seed(
 ) -> Result<DiceEvaluation, ParsingError>
 {
 	let mut seeded_random = rand::rngs::StdRng::seed_from_u64(seed);
-
-	if let Some(symbol_table) = symbol_table
-	{
-		eval_with_rand(input, &mut seeded_random, symbol_table)
-	}
-	else
-	{
-		eval_with_rand(input, &mut seeded_random, &SymbolTable::default())
-	}
+	eval_with_rand(input, &mut seeded_random, symbol_table)
 }
 
 /// Evaluates a string in format similar to [Standard Dice Notation](https://en.wikipedia.org/wiki/Dice_notation)
@@ -100,7 +84,7 @@ pub fn eval_with_seed(
 ///
 /// // this seed will generate a 4 and a 5 from the first two rolls
 /// let mut seeded = StdRng::seed_from_u64(2024);
-/// let evaluation = saikoro::eval_with_rand("2d6", &mut seeded)?;
+/// let evaluation = saikoro::eval_with_rand("2d6", &mut seeded, None)?;
 /// assert_eq!(evaluation.value, 9.0);
 /// # Ok(())
 /// # }
@@ -120,16 +104,34 @@ pub fn eval_with_seed(
 pub fn eval_with_rand<R>(
 	input: &str,
 	rand: &mut R,
-	symbol_table: &SymbolTable,
+	symbol_table: Option<&SymbolTable>,
 ) -> Result<DiceEvaluation, ParsingError>
 where
 	R: RangeRng,
 {
-	evaluation::evaluate_tree_internal(
-		parsing::parse_tree_from(&mut TokenStream::new(input))?,
-		rand,
-		symbol_table,
-	)
+	// so unfortunately i think this actually *is* the best way to write this without
+	// having to construct a new empty symbol table every time. if you tried
+	// to do it inline in the function call or with `unwrap_or_else` the lifetimes
+	// simply dont work out to allow it.
+	// so as much as this really hurts my soul, i think this is how were gonna write it
+	// -morgan 2025-06-06
+
+	if let Some(symbol_table) = symbol_table
+	{
+		evaluation::evaluate_tree_internal(
+			parsing::parse_tree_from(&mut TokenStream::new(input))?,
+			rand,
+			symbol_table,
+		)
+	}
+	else
+	{
+		evaluation::evaluate_tree_internal(
+			parsing::parse_tree_from(&mut TokenStream::new(input))?,
+			rand,
+			&SymbolTable::default(),
+		)
+	}
 }
 
 /// A utility trait for allowing flexibility for testing or rigging saikoro's random number
@@ -265,12 +267,7 @@ pub(crate) mod test_helpers
 	#[test]
 	fn rigged_random_test()
 	{
-		let rolls = eval_with_rand(
-			"3d6",
-			&mut RiggedRandom::new([3, 5, 2]),
-			&SymbolTable::new(),
-		)
-		.unwrap();
+		let rolls = eval_with_rand("3d6", &mut RiggedRandom::new([3, 5, 2]), None).unwrap();
 
 		assert_approx_eq!(rolls.value, 10.0);
 		assert_eq!(
