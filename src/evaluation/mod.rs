@@ -7,12 +7,71 @@ mod symbol_table;
 use std::{collections::HashMap, hash::Hash};
 
 pub use operand::*;
+use rand::SeedableRng;
 pub use roll_types::*;
 pub use symbol_table::*;
 
 use crate::{error::ParsingError, parsing::Node, RangeRng};
 
-pub(super) fn evaluate_tree<R>(
+// TODO: docs
+pub fn eval_tree(
+	parsed_tree: Node,
+	symbol_table: Option<&SymbolTable>,
+) -> Result<DiceEvaluation, ParsingError>
+{
+	if let Some(symbol_table) = symbol_table
+	{
+		evaluate_tree_internal(parsed_tree, &mut rand::thread_rng(), symbol_table)
+	}
+	else
+	{
+		evaluate_tree_internal(
+			parsed_tree,
+			&mut rand::thread_rng(),
+			&SymbolTable::default(),
+		)
+	}
+}
+
+// TODO: docs
+pub fn eval_tree_with_seed(
+	parsed_tree: Node,
+	seed: u64,
+	symbol_table: Option<&SymbolTable>,
+) -> Result<DiceEvaluation, ParsingError>
+{
+	let mut seeded_random = rand::rngs::StdRng::seed_from_u64(seed);
+
+	if let Some(symbol_table) = symbol_table
+	{
+		evaluate_tree_internal(parsed_tree, &mut seeded_random, symbol_table)
+	}
+	else
+	{
+		evaluate_tree_internal(parsed_tree, &mut seeded_random, &SymbolTable::new())
+	}
+}
+
+// TODO: docs
+pub fn eval_tree_with_rand<R>(
+	parsed_tree: Node,
+	rng: &mut R,
+	symbol_table: Option<&SymbolTable>,
+) -> Result<DiceEvaluation, ParsingError>
+where
+	R: RangeRng,
+{
+	if let Some(symbol_table) = symbol_table
+	{
+		evaluate_tree_internal(parsed_tree, rng, symbol_table)
+	}
+	else
+	{
+		evaluate_tree_internal(parsed_tree, rng, &SymbolTable::new())
+	}
+}
+
+pub(super) fn evaluate_tree_internal<R>(
 	parse_tree: Node,
 	rng: &mut R,
 	symbol_table: &SymbolTable,
@@ -167,6 +226,6 @@ mod tests
 	{
 		let mut stream = TokenStream::new(input);
 		let tree = parsing::parse_tree_from(&mut stream)?;
-		evaluate_tree(tree, rand, &SymbolTable::new()) // todo: add support for a symbol table in this function
+		evaluate_tree_internal(tree, rand, &SymbolTable::new()) // todo: add support for a symbol table in this function
 	}
 }

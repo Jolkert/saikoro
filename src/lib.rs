@@ -11,7 +11,7 @@
 pub mod error;
 pub mod evaluation;
 pub mod operator;
-mod parsing;
+pub mod parsing;
 #[cfg(feature = "stats")]
 mod statistics;
 mod tokenization;
@@ -74,13 +74,12 @@ pub fn evaluate(
 /// (see [`saikoro::eval_with_rand`][`eval_with_rand`] for more information)
 pub fn eval_with_seed(
 	input: &str,
-	symbol_table: Option<&SymbolTable>,
 	seed: u64,
+	symbol_table: Option<&SymbolTable>,
 ) -> Result<DiceEvaluation, ParsingError>
 {
 	let mut seeded_random = rand::rngs::StdRng::seed_from_u64(seed);
 
-	#[allow(clippy::option_if_let_else)]
 	if let Some(symbol_table) = symbol_table
 	{
 		eval_with_rand(input, &mut seeded_random, symbol_table)
@@ -88,45 +87,6 @@ pub fn eval_with_seed(
 	else
 	{
 		eval_with_rand(input, &mut seeded_random, &SymbolTable::default())
-	}
-}
-
-pub fn parse_roll(input: &str) -> Result<Node, ParsingError>
-{
-	parsing::parse_tree_from(&mut TokenStream::new(input))
-}
-
-pub fn eval_parsed(
-	input: Node,
-	symbol_table: Option<&SymbolTable>,
-) -> Result<DiceEvaluation, ParsingError>
-{
-	#[allow(clippy::option_if_let_else)]
-	if let Some(symbol_table) = symbol_table
-	{
-		evaluation::evaluate_tree(input, &mut rand::thread_rng(), symbol_table)
-	}
-	else
-	{
-		evaluation::evaluate_tree(input, &mut rand::thread_rng(), &SymbolTable::default())
-	}
-}
-
-pub fn eval_parsed_with_seed(
-	input: Node,
-	symbol_table: Option<&SymbolTable>,
-	seed: u64,
-) -> Result<DiceEvaluation, ParsingError>
-{
-	let mut seeded_random = rand::rngs::StdRng::seed_from_u64(seed);
-
-	if let Some(symbol_table) = symbol_table
-	{
-		evaluation::evaluate_tree(input, &mut seeded_random, symbol_table)
-	}
-	else
-	{
-		evaluation::evaluate_tree(input, &mut seeded_random, &SymbolTable::new())
 	}
 }
 
@@ -165,7 +125,7 @@ pub fn eval_with_rand<R>(
 where
 	R: RangeRng,
 {
-	evaluation::evaluate_tree(
+	evaluation::evaluate_tree_internal(
 		parsing::parse_tree_from(&mut TokenStream::new(input))?,
 		rand,
 		symbol_table,
@@ -235,7 +195,7 @@ pub(crate) mod test_helpers
 {
 	use std::collections::VecDeque;
 
-	use crate::{eval_parsed, eval_with_rand, parse_roll, RangeRng, SymbolTable};
+	use super::*;
 
 	pub struct RiggedRandom
 	{
@@ -324,6 +284,7 @@ pub(crate) mod test_helpers
 
 	#[test]
 	#[allow(clippy::similar_names)]
+	// TODO: this test kinda sucks actually we should really make it not terrible
 	fn symbol_test()
 	{
 		let mut symbols = SymbolTable::new();
@@ -331,27 +292,27 @@ pub(crate) mod test_helpers
 		assert!(symbols.insert("sym2", "-2").is_ok());
 		assert!(symbols.insert("sym3", "d4 - 1").is_ok());
 
-		let roll1 = match parse_roll("d20 + {sym1}")
+		let roll1 = match parsing::parse_string("d20 + {sym1}")
 		{
-			Ok(n) => eval_parsed(n, Some(&symbols)),
+			Ok(n) => evaluation::eval_tree(n, Some(&symbols)),
 			Err(e) => panic!("{e:?}"),
 		};
 
-		let roll2 = match parse_roll("{sym1}d6")
+		let roll2 = match parsing::parse_string("{sym1}d6")
 		{
-			Ok(n) => eval_parsed(n, Some(&symbols)),
+			Ok(n) => evaluation::eval_tree(n, Some(&symbols)),
 			Err(e) => panic!("{e:?}"),
 		};
 
-		let roll3 = match parse_roll("d20 + {sym2}")
+		let roll3 = match parsing::parse_string("d20 + {sym2}")
 		{
-			Ok(n) => eval_parsed(n, Some(&symbols)),
+			Ok(n) => evaluation::eval_tree(n, Some(&symbols)),
 			Err(e) => panic!("{e:?}"),
 		};
 
-		let roll4 = match parse_roll("d20 + {sym3}")
+		let roll4 = match parsing::parse_string("d20 + {sym3}")
 		{
-			Ok(n) => eval_parsed(n, Some(&symbols)),
+			Ok(n) => evaluation::eval_tree(n, Some(&symbols)),
 			Err(e) => panic!("{e:?}"),
 		};
 

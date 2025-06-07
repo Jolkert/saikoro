@@ -32,7 +32,12 @@ pub enum Node
 	Symbolic(String),
 }
 
-pub fn parse_tree_from(stream: &mut TokenStream) -> Result<Node, ParsingError>
+pub fn parse_string(roll_str: &str) -> Result<Node, ParsingError>
+{
+	parse_tree_from(&mut TokenStream::new(roll_str))
+}
+
+pub(crate) fn parse_tree_from(stream: &mut TokenStream) -> Result<Node, ParsingError>
 {
 	parse_min_power(stream, 0, ParseContext::default())
 }
@@ -176,7 +181,7 @@ struct ParseContext
 }
 impl ParseContext
 {
-	pub fn expect_close_paren(self) -> Self
+	fn expect_close_paren(self) -> Self
 	{
 		Self {
 			expecting_close_paren: true,
@@ -184,7 +189,7 @@ impl ParseContext
 		}
 	}
 
-	pub fn expect_comparison(self) -> Self
+	fn expect_comparison(self) -> Self
 	{
 		Self {
 			expecting_comparison: true,
