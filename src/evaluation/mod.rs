@@ -19,14 +19,7 @@ pub fn eval_tree(
 	symbol_table: Option<&SymbolTable>,
 ) -> Result<DiceEvaluation, MissingSymbolError>
 {
-	if let Some(symbol_table) = symbol_table
-	{
-		evaluate_tree_internal(parsed_tree, &mut rand::rng(), symbol_table)
-	}
-	else
-	{
-		evaluate_tree_internal(parsed_tree, &mut rand::rng(), &SymbolTable::default())
-	}
+	eval_tree_with_rand(parsed_tree, &mut rand::rng(), symbol_table)
 }
 
 // TODO: docs
@@ -37,15 +30,7 @@ pub fn eval_tree_with_seed(
 ) -> Result<DiceEvaluation, MissingSymbolError>
 {
 	let mut seeded_random = rand::rngs::StdRng::seed_from_u64(seed);
-
-	if let Some(symbol_table) = symbol_table
-	{
-		evaluate_tree_internal(parsed_tree, &mut seeded_random, symbol_table)
-	}
-	else
-	{
-		evaluate_tree_internal(parsed_tree, &mut seeded_random, &SymbolTable::new())
-	}
+	eval_tree_with_rand(parsed_tree, &mut seeded_random, symbol_table)
 }
 
 // TODO: docs
