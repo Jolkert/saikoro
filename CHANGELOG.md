@@ -1,3 +1,11 @@
+# v2.0.0 (Unreleased)
+- Added support for interpolating subexpressions into parse tree with `SymbolTable`
+- Added support for serializing and deserializing pre-parsed trees using `serde`
+(requires `serde` feature to be enabled)
+- Added `MissingSymbolError` which can occur at evaluation-time due to encountering
+a symbol in the parse tree that is not present in the passed symbol table
+- Changed version of `rand` crate used (`0.8.5 -> 0.9.1`)
+
 # v1.2.4
 ## Miscellaneous
 - Added missing docs for public items
