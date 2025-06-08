@@ -15,7 +15,7 @@ use crate::{RangeRng, error::MissingSymbolError, parsing::Node};
 
 // TODO: docs
 pub fn eval_tree(
-	parsed_tree: Node,
+	parsed_tree: &Node,
 	symbol_table: Option<&SymbolTable>,
 ) -> Result<DiceEvaluation, MissingSymbolError>
 {
@@ -24,7 +24,7 @@ pub fn eval_tree(
 
 // TODO: docs
 pub fn eval_tree_with_seed(
-	parsed_tree: Node,
+	parsed_tree: &Node,
 	seed: u64,
 	symbol_table: Option<&SymbolTable>,
 ) -> Result<DiceEvaluation, MissingSymbolError>
@@ -35,7 +35,7 @@ pub fn eval_tree_with_seed(
 
 // TODO: docs
 pub fn eval_tree_with_rand<R>(
-	parsed_tree: Node,
+	parsed_tree: &Node,
 	rng: &mut R,
 	symbol_table: Option<&SymbolTable>,
 ) -> Result<DiceEvaluation, MissingSymbolError>
@@ -53,7 +53,7 @@ where
 }
 
 pub(super) fn evaluate_tree_internal<R>(
-	parse_tree: Node,
+	parse_tree: &Node,
 	rng: &mut R,
 	symbol_table: &SymbolTable,
 ) -> Result<DiceEvaluation, MissingSymbolError>
@@ -70,7 +70,7 @@ where
 	})
 }
 fn evaluate_node<R>(
-	node: Node,
+	node: &Node,
 	rng: &mut R,
 	rolls: &mut OrderedMap<RollId, RollGroup>,
 	symbol_table: &SymbolTable,
@@ -80,18 +80,18 @@ where
 {
 	let operand = match node
 	{
-		Node::Leaf(n) => Operand::Number(n),
+		Node::Leaf(n) => Operand::Number(*n),
 		Node::Unary { operator, argument } =>
 		{
-			operator.eval(evaluate_node(*argument, rng, rolls, symbol_table)?, rng)
+			operator.eval(evaluate_node(argument, rng, rolls, symbol_table)?, rng)
 		}
 		Node::Binary {
 			operator,
 			left,
 			right,
 		} => operator.eval(
-			evaluate_node(*left, rng, rolls, symbol_table)?,
-			evaluate_node(*right, rng, rolls, symbol_table)?,
+			evaluate_node(left, rng, rolls, symbol_table)?,
+			evaluate_node(right, rng, rolls, symbol_table)?,
 			rng,
 		),
 		Node::ComparisonTernary {
@@ -100,16 +100,15 @@ where
 			dice_right,
 			compare_to,
 		} => comp_operator.eval(
-			evaluate_node(*dice_left, rng, rolls, symbol_table)?,
-			evaluate_node(*dice_right, rng, rolls, symbol_table)?,
-			evaluate_node(*compare_to, rng, rolls, symbol_table)?,
+			evaluate_node(dice_left, rng, rolls, symbol_table)?,
+			evaluate_node(dice_right, rng, rolls, symbol_table)?,
+			evaluate_node(compare_to, rng, rolls, symbol_table)?,
 			rng,
 		),
 		Node::Symbolic(s) => evaluate_node(
 			symbol_table
-				.get(&s)
-				.cloned()
-				.ok_or_else(|| MissingSymbolError::from(s))?,
+				.get(s)
+				.ok_or_else(|| MissingSymbolError::from(s.clone()))?,
 			rng,
 			rolls,
 			symbol_table,
@@ -208,6 +207,6 @@ mod tests
 	{
 		let mut stream = TokenStream::new(input);
 		let tree = parsing::parse_tree_from(&mut stream)?;
-		Ok(evaluate_tree_internal(tree, rand, &SymbolTable::new())?) // todo: add support for a symbol table in this function
+		Ok(evaluate_tree_internal(&tree, rand, &SymbolTable::new())?) // todo: add support for a symbol table in this function
 	}
 }

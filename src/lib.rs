@@ -50,7 +50,8 @@ pub fn evaluate(input: &str) -> Result<DiceEvaluation, SaikoroError>
 	eval_with_rand(input, &mut rand::rng(), Some(&SymbolTable::default()))
 }
 
-/// Evaluates a dice string substituting the symbols provided by the [`SymbolTable`]\
+#[allow(clippy::too_long_first_doc_paragraph)]
+/// Evaluates a dice string substituting the symbols provided by the [`SymbolTable`].\
 /// Any string which appears between `{}` (eg. `{var}`) will be looked up in the symbol table
 /// and be replaced by its value.
 /// (see [`saikoro::evaluate`][`evaluate`] for more information)
@@ -119,7 +120,7 @@ where
 	Ok((if let Some(symbol_table) = symbol_table
 	{
 		evaluation::evaluate_tree_internal(
-			parsing::parse_tree_from(&mut TokenStream::new(input))?,
+			&parsing::parse_tree_from(&mut TokenStream::new(input))?,
 			rand,
 			symbol_table,
 		)
@@ -127,7 +128,7 @@ where
 	else
 	{
 		evaluation::evaluate_tree_internal(
-			parsing::parse_tree_from(&mut TokenStream::new(input))?,
+			&parsing::parse_tree_from(&mut TokenStream::new(input))?,
 			rand,
 			&SymbolTable::default(),
 		)
@@ -291,25 +292,25 @@ pub(crate) mod test_helpers
 
 		let roll1 = match parsing::parse_string("d20 + {sym1}")
 		{
-			Ok(n) => evaluation::eval_tree(n, Some(&symbols)),
+			Ok(n) => evaluation::eval_tree(&n, Some(&symbols)),
 			Err(e) => panic!("{e:?}"),
 		};
 
 		let roll2 = match parsing::parse_string("{sym1}d6")
 		{
-			Ok(n) => evaluation::eval_tree(n, Some(&symbols)),
+			Ok(n) => evaluation::eval_tree(&n, Some(&symbols)),
 			Err(e) => panic!("{e:?}"),
 		};
 
 		let roll3 = match parsing::parse_string("d20 + {sym2}")
 		{
-			Ok(n) => evaluation::eval_tree(n, Some(&symbols)),
+			Ok(n) => evaluation::eval_tree(&n, Some(&symbols)),
 			Err(e) => panic!("{e:?}"),
 		};
 
 		let roll4 = match parsing::parse_string("d20 + {sym3}")
 		{
-			Ok(n) => evaluation::eval_tree(n, Some(&symbols)),
+			Ok(n) => evaluation::eval_tree(&n, Some(&symbols)),
 			Err(e) => panic!("{e:?}"),
 		};
 
