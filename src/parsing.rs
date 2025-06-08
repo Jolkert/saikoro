@@ -8,6 +8,17 @@ use crate::{
 };
 
 #[derive(Debug, PartialEq, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct ParseTree(
+	#[cfg_attr(
+		feature = "serde",
+		serde(deserialize_with = "crate::serde_derives::string_or_struct")
+	)]
+	Node,
+);
+
+#[derive(Debug, PartialEq, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum Node
 {
 	Binary

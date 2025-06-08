@@ -1,10 +1,11 @@
 use std::fmt::Display;
 
-use super::{function, OpToken};
-use crate::{error::InvalidOperatorError, evaluation::Operand, RangeRng};
+use super::{OpToken, function};
+use crate::{RangeRng, error::InvalidOperatorError, evaluation::Operand};
 
 /// Represents an operator which takes only one [`Operand`] as an argument
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct UnaryOperator
 {
 	/// The token which represents this operator
@@ -70,6 +71,7 @@ impl From<UnaryOpToken> for UnaryOperator
 
 /// An enum representing a token which corresponds to a [`UnaryOperator`]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum UnaryOpToken
 {
 	/// Represents the unary plus (`+(expr)`)
@@ -96,6 +98,7 @@ impl TryFrom<OpToken> for UnaryOpToken
 
 /// An enum representing whether a [`UnaryOperator`] is a prefix or postfix operator
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum UnaryDirection
 {
 	/// Represents a unary operator which precedes its operand

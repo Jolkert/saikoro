@@ -1,10 +1,11 @@
 use std::{fmt::Display, str::FromStr};
 
-use super::{function, ParseOperatorError};
-use crate::{evaluation::Operand, RangeRng};
+use super::{ParseOperatorError, function};
+use crate::{RangeRng, evaluation::Operand};
 
 /// Represents a comparison operator which is used to filter out individual rolls of a dice roll
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum CompOperator
 {
 	/// Represents the equality comparison (`roll == expr`)

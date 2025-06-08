@@ -14,6 +14,7 @@ pub use unary_op::*;
 
 /// An enum representing a token which corresponds to an operator
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum OpToken
 {
 	/// Represents the string token `+`

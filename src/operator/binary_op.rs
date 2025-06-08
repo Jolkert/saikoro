@@ -1,8 +1,9 @@
-use super::{function, OpToken};
-use crate::{evaluation::Operand, RangeRng};
+use super::{OpToken, function};
+use crate::{RangeRng, evaluation::Operand};
 
 /// Represents an operator which takes two [`Operand`]s as its arguments
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct BinaryOperator
 {
 	// if we add an operator that cant be binary, we have to change this
@@ -69,6 +70,7 @@ impl From<OpToken> for BinaryOperator
 // Not redundant because it gets re-exported in saikoro::operator -morgan 2024-01-12
 #[allow(clippy::redundant_pub_crate)]
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub(crate) struct BindingPower
 {
 	pub left: u8,

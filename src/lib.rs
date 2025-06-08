@@ -12,6 +12,8 @@ pub mod error;
 pub mod evaluation;
 pub mod operator;
 pub mod parsing;
+#[cfg(feature = "serde")]
+pub(crate) mod serde_derives;
 #[cfg(feature = "stats")]
 mod statistics;
 mod tokenization;
