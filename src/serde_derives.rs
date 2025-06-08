@@ -13,7 +13,7 @@ impl FromStr for Node
 
 	fn from_str(s: &str) -> Result<Self, Self::Err>
 	{
-		crate::parsing::parse_string(s)
+		crate::parsing::parse_string(s).map(|tree| tree.head)
 	}
 }
 

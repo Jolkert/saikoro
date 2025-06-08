@@ -11,11 +11,15 @@ use rand::SeedableRng;
 pub use roll_types::*;
 pub use symbol_table::*;
 
-use crate::{RangeRng, error::MissingSymbolError, parsing::Node};
+use crate::{
+	RangeRng,
+	error::MissingSymbolError,
+	parsing::{Node, ParseTree},
+};
 
 // TODO: docs
 pub fn eval_tree(
-	parsed_tree: &Node,
+	parsed_tree: &ParseTree,
 	symbol_table: Option<&SymbolTable>,
 ) -> Result<DiceEvaluation, MissingSymbolError>
 {
@@ -24,7 +28,7 @@ pub fn eval_tree(
 
 // TODO: docs
 pub fn eval_tree_with_seed(
-	parsed_tree: &Node,
+	parsed_tree: &ParseTree,
 	seed: u64,
 	symbol_table: Option<&SymbolTable>,
 ) -> Result<DiceEvaluation, MissingSymbolError>
@@ -35,7 +39,7 @@ pub fn eval_tree_with_seed(
 
 // TODO: docs
 pub fn eval_tree_with_rand<R>(
-	parsed_tree: &Node,
+	parsed_tree: &ParseTree,
 	rng: &mut R,
 	symbol_table: Option<&SymbolTable>,
 ) -> Result<DiceEvaluation, MissingSymbolError>
@@ -44,11 +48,11 @@ where
 {
 	if let Some(symbol_table) = symbol_table
 	{
-		evaluate_tree_internal(parsed_tree, rng, symbol_table)
+		evaluate_tree_internal(&parsed_tree.head, rng, symbol_table)
 	}
 	else
 	{
-		evaluate_tree_internal(parsed_tree, rng, &SymbolTable::new())
+		evaluate_tree_internal(&parsed_tree.head, rng, &SymbolTable::new())
 	}
 }
 

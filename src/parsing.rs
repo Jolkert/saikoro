@@ -9,13 +9,22 @@ use crate::{
 
 #[derive(Debug, PartialEq, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct ParseTree(
+#[cfg_attr(feature = "serde", serde(transparent))]
+pub struct ParseTree
+{
 	#[cfg_attr(
 		feature = "serde",
 		serde(deserialize_with = "crate::serde_derives::string_or_struct")
 	)]
-	Node,
-);
+	pub head: Node,
+}
+impl From<Node> for ParseTree
+{
+	fn from(value: Node) -> Self
+	{
+		Self { head: value }
+	}
+}
 
 #[derive(Debug, PartialEq, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -46,9 +55,9 @@ pub enum Node
 /// Parses a dice string into a tree to be evaluated. Useful for storing
 /// a pre-parsed table to store and reuse.\
 /// (see [`evaluation::eval_tree`][`crate::evaluation::eval_tree`] for evaluating the tree)
-pub fn parse_string(roll_str: &str) -> Result<Node, ParsingError>
+pub fn parse_string(roll_str: &str) -> Result<ParseTree, ParsingError>
 {
-	parse_tree_from(&mut TokenStream::new(roll_str))
+	parse_tree_from(&mut TokenStream::new(roll_str)).map(Into::into)
 }
 
 pub(crate) fn parse_tree_from(stream: &mut TokenStream) -> Result<Node, ParsingError>
