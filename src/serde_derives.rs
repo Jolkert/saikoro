@@ -63,3 +63,50 @@ where
 
 	deserializer.deserialize_any(StringOrStruct(PhantomData))
 }
+
+#[cfg(test)]
+mod test
+{
+	use crate::parsing::ParseTree;
+
+	#[test]
+	fn string_deser_match_parsed()
+	{
+		let ron_string = r#"
+            TreeContainer(
+                tree: "2d6"
+            )
+        "#;
+
+		let deser_ron = ron::from_str::<TreeContainer>(ron_string)
+			.expect("ron broke :(")
+			.tree;
+		let parsed =
+			crate::parsing::parse_string("2d6").expect("for some reason we can't parse 2d6??");
+
+		assert_eq!(deser_ron, parsed);
+	}
+
+	#[test]
+	fn string_deser_match_raw()
+	{
+		let ron_string = r#"
+            TreeContainer(
+                tree: "2d6"
+            )
+        "#;
+
+		let deser_ron = ron::from_str::<TreeContainer>(ron_string)
+			.expect("ron broke :(")
+			.tree;
+		let raw = crate::parsing::tests::two_d_six().into();
+
+		assert_eq!(deser_ron, raw);
+	}
+
+	#[derive(serde::Deserialize)]
+	struct TreeContainer
+	{
+		tree: ParseTree,
+	}
+}

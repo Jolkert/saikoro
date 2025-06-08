@@ -222,7 +222,7 @@ impl ParseContext
 }
 
 #[cfg(test)]
-mod tests
+pub(crate) mod tests
 {
 	use super::*;
 	use crate::{test_helpers::flip_result, tokenization::TokenStream};
@@ -343,5 +343,14 @@ mod tests
 	fn parse_str(input: &str) -> Result<Node, ParsingError>
 	{
 		parse_tree_from(&mut TokenStream::new(input))
+	}
+
+	pub fn two_d_six() -> Node
+	{
+		Node::Binary {
+			operator: OpToken::Dice.into(),
+			left: Box::new(Node::Leaf(2.0)),
+			right: Box::new(Node::Leaf(6.0)),
+		}
 	}
 }

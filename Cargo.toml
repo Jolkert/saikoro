@@ -12,6 +12,11 @@ categories = ["mathematics", "parser-implementations"]
 exclude = ["bacon.toml", ".vscode/", "CHANGELOG.md"]
 
 [features]
+# the default feaures *should* be empty. we put them on full
+# because its the least painful way to make sure rust-analyzer
+# checks all the code instead of just parts of it :)
+# -morgan 2025-06-08
+default = ["full"]
 stats = []
 serde = ["dep:serde"]
 full = ["stats", "serde"]
@@ -25,6 +30,9 @@ rand = "0.9.1"
 regex = "1.9.4"
 serde = { version = "1.0.219", features = ["derive"],  optional = true }
 thiserror = "1.0.51"
+
+[dev-dependencies]
+ron = "0.10.1"
 
 [lints.clippy]
 pedantic = "warn"
@@ -42,3 +50,4 @@ must-use-candidate = {level = "allow", priority = 1}
 trivial-regex = {level = "allow", priority = 1}
 neg_cmp_op_on_partial_ord = {level = "allow", priority = 1}
 match-wildcard-for-single-variants = {level = "allow", priority = 1}
+
