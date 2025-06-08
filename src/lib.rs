@@ -50,6 +50,10 @@ pub fn evaluate(input: &str) -> Result<DiceEvaluation, SaikoroError>
 	eval_with_rand(input, &mut rand::rng(), Some(&SymbolTable::default()))
 }
 
+/// Evaluates a dice string substituting the symbols provided by the [`SymbolTable`]\
+/// Any string which appears between `{}` (eg. `{var}`) will be looked up in the symbol table
+/// and be replaced by its value.
+/// (see [`saikoro::evaluate`][`evaluate`] for more information)
 pub fn eval_with_symbols(
 	input: &str,
 	symbol_table: &SymbolTable,

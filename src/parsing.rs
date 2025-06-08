@@ -32,6 +32,9 @@ pub enum Node
 	Symbolic(String),
 }
 
+/// Parses a dice string into a tree to be evaluated. Useful for storing
+/// a pre-parsed table to store and reuse.\
+/// (see [`evaluation::eval_tree`][`crate::evaluation::eval_tree`] for evaluating the tree)
 pub fn parse_string(roll_str: &str) -> Result<Node, ParsingError>
 {
 	parse_tree_from(&mut TokenStream::new(roll_str))
