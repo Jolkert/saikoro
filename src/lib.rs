@@ -8,6 +8,8 @@
 //! # Ok(())}
 //! ```
 
+#[allow(dead_code)]
+mod custom_functions;
 pub mod error;
 pub mod evaluation;
 pub mod operator;
